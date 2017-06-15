@@ -1,0 +1,53 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="2.0">
+ <Domain>
+   <Grid Name="node_mesh" GridType="Uniform">
+    <Time Value="0.000000e+00"/>
+     <Topology TopologyType="2DSMesh" NumberOfElements="401 301"/>
+     <Geometry GeometryType="X_Y">
+       <DataItem Dimensions="401 301" NumberType="Float" Precision="4" Format="HDF">
+        .//data.0000.dbl.h5:/node_coords/X
+       </DataItem>
+       <DataItem Dimensions="401 301" NumberType="Float" Precision="4" Format="HDF">
+        .//data.0000.dbl.h5:/node_coords/Y
+       </DataItem>
+     </Geometry>
+     <Attribute Name="rho" AttributeType="Scalar" Center="Cell">
+       <DataItem Dimensions="400 300" NumberType="Float" Precision="8" Format="HDF">
+        .//data.0000.dbl.h5:Timestep_0/vars/rho
+       </DataItem>
+     </Attribute>
+     <Attribute Name="vx1" AttributeType="Scalar" Center="Cell">
+       <DataItem Dimensions="400 300" NumberType="Float" Precision="8" Format="HDF">
+        .//data.0000.dbl.h5:Timestep_0/vars/vx1
+       </DataItem>
+     </Attribute>
+     <Attribute Name="vx2" AttributeType="Scalar" Center="Cell">
+       <DataItem Dimensions="400 300" NumberType="Float" Precision="8" Format="HDF">
+        .//data.0000.dbl.h5:Timestep_0/vars/vx2
+       </DataItem>
+     </Attribute>
+     <Attribute Name="vx3" AttributeType="Scalar" Center="Cell">
+       <DataItem Dimensions="400 300" NumberType="Float" Precision="8" Format="HDF">
+        .//data.0000.dbl.h5:Timestep_0/vars/vx3
+       </DataItem>
+     </Attribute>
+     <Attribute Name="prs" AttributeType="Scalar" Center="Cell">
+       <DataItem Dimensions="400 300" NumberType="Float" Precision="8" Format="HDF">
+        .//data.0000.dbl.h5:Timestep_0/vars/prs
+       </DataItem>
+     </Attribute>
+     <Attribute Name="X" AttributeType="Scalar" Center="Cell">
+       <DataItem Dimensions="400 300" NumberType="Float" Precision="4" Format="HDF">
+        .//data.0000.dbl.h5:/cell_coords/X
+       </DataItem>
+     </Attribute>
+     <Attribute Name="Y" AttributeType="Scalar" Center="Cell">
+       <DataItem Dimensions="400 300" NumberType="Float" Precision="4" Format="HDF">
+        .//data.0000.dbl.h5:/cell_coords/Y
+       </DataItem>
+     </Attribute>
+   </Grid>
+ </Domain>
+</Xdmf>
