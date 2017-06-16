@@ -3,12 +3,19 @@ import os
 
 import h5py
 import numpy as np
+import scipy
+from scipy.ndimage.interpolation import map_coordinates
+from scipy.interpolate import griddata
 import xml.etree.cElementTree as xml
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from matplotlib import rc
+from matplotlib import colors, ticker, cm
+from matplotlib.colors import LogNorm
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
+np.set_printoptions(threshold=500)
+
 
 class SimulationData:
     def __init__(self):
@@ -135,7 +142,7 @@ class SimulationData:
 
 
 class Tools:
-
+    pass
 
 
 class DataHandler:
@@ -214,6 +221,22 @@ class DataHandler:
         plt.show()
 
 
+def polarCoordsToCartesian(x1, x2):
+    r_matrix, th_matrix = np.meshgrid(x1, x2)
+    x = r_matrix * np.sin(th_matrix)
+    y = r_matrix * np.cos(th_matrix)
+    return x, y
+
 data = SimulationData()
 data.loadFrame("0000")
 data.loadGridData()
+
+x, y = polarCoordsToCartesian(data.x1, data.x2)
+
+#xx, yy = np.meshgrid(data.x1, data.x2)
+
+plt.clf()
+#plt.contour(xx, yy, data.rho)
+plt.pcolormesh(x, y, data.rho, norm=LogNorm(vmin=data.rho.min(), vmax=data.rho.max()), cmap=cm.inferno)
+plt.colorbar()
+plt.savefig("test.png", dpi=200)
