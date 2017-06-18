@@ -142,13 +142,8 @@ class SimulationData:
 
 
 class Tools:
-    pass
-
-
-class DataHandler:
-
     @staticmethod
-    def computeTemperature(path, replace=False):
+    def computeTemperatureToFile(path, replace=False):
         sim = SimulationData(path)
         kelvin = 1.072914e+05
         mu = 1.37125
@@ -158,14 +153,14 @@ class DataHandler:
         sim.insertData(temp, "Temp")
 
     @staticmethod
-    def computeTemperatures(path, replace=False):
+    def computeTemperaturesToFile(path, replace=False):
         for file in os.listdir(path):
             if file.endswith(".h5"):
                 print("Computing T for " + file)
-                DataHandler.computeTemperature(os.path.join(path, file), replace=replace)
+                DataHandler.computeTemperatureToFile(os.path.join(path, file), replace=replace)
 
     @staticmethod
-    def computeVelocity(path, replace=False):
+    def computeVelocityToFile(path, replace=False):
         sim = SimulationData(path)
         if replace:
             sim.removeData("VABS")
@@ -173,11 +168,11 @@ class DataHandler:
         sim.insertData(v, "VABS")
 
     @staticmethod
-    def computeVelocities(path, replace=False):
+    def computeVelocitiesToFile(path, replace=False):
         for file in os.listdir(path):
             if file.endswith(".h5"):
                 print("Computing v for " + file)
-                DataHandler.computeVelocity(os.path.join(path, file), replace=replace)
+                DataHandler.computeVelocityToFile(os.path.join(path, file), replace=replace)
 
     @staticmethod
     def computeMassLoss(path):
@@ -197,6 +192,7 @@ class DataHandler:
         totalMassLoss = np.add.reduce(massLoss)
         return totalMassLoss * sim.year / sim.solarMass, sim
 
+    @staticmethod
     def computeMassLosses(path):
         losses = []
         times = []
@@ -208,6 +204,7 @@ class DataHandler:
                 print("Massflux for " + file + ": " + str(loss))
         return losses, times
 
+    @staticmethod
     def plotMassLosses(path):
         losses, times = DataHandler.computeMassLosses("./")
         losses = np.array(losses, dtype=np.double)
@@ -220,23 +217,43 @@ class DataHandler:
         plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
         plt.show()
 
+    @staticmethod
+    def polarCoordsToCartesian(x1, x2):
+        r_matrix, th_matrix = np.meshgrid(x1, x2)
+        x = r_matrix * np.sin(th_matrix)
+        y = r_matrix * np.cos(th_matrix)
+        return x, y
 
-def polarCoordsToCartesian(x1, x2):
-    r_matrix, th_matrix = np.meshgrid(x1, x2)
-    x = r_matrix * np.sin(th_matrix)
-    y = r_matrix * np.cos(th_matrix)
-    return x, y
+    @staticmethod
+    def plotDensity(data, filename):
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        plt.clf()
+        plt.figure(figsize=(6,4))
+        plt.pcolormesh(x, y, data.rho, norm=LogNorm(vmin=data.rho.min(), vmax=data.rho.max()), cmap=cm.inferno)
+        plt.colorbar()
+        plt.xlabel(r'r')
+        plt.ylabel(r'z')
+        plt.savefig(filename + ".png", dpi=200)
+
+    @staticmethod
+    def plotVelocityField(data, filename, overlay=False, wind_only=True):
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        if not overlay:
+            plt.clf()
+            plt.figure(figsize=(6,4))
+
+        plt.quiver(x, y, data.vx1, data.vx2)
+        plt.savefig(filename + ".png", dpi=200)
+
+
+
 
 data = SimulationData()
-data.loadFrame("0000")
+data.loadFrame("0001")
 data.loadGridData()
 
-x, y = polarCoordsToCartesian(data.x1, data.x2)
+Tools.plotDensity(data, "test")
+Tools.plotVelocityField(data, "field")
+
 
 #xx, yy = np.meshgrid(data.x1, data.x2)
-
-plt.clf()
-#plt.contour(xx, yy, data.rho)
-plt.pcolormesh(x, y, data.rho, norm=LogNorm(vmin=data.rho.min(), vmax=data.rho.max()), cmap=cm.inferno)
-plt.colorbar()
-plt.savefig("test.png", dpi=200)
