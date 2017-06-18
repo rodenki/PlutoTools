@@ -36,6 +36,7 @@ class SimulationData:
         self.x2 = np.array([])
         self.dx1 = np.array([])
         self.dx2 = np.array([])
+        self.variables = {}
         self.rho = np.array([])
         self.prs = np.array([])
         self.vx1 = np.array([])
@@ -66,20 +67,20 @@ class SimulationData:
         except NameError:
             print("File " + filename + " not found")
 
-        self.cell_coordinates_x = np.array(self.hdf5File['cell_coords']['X'])
-        self.cell_coordinates_y = np.array(self.hdf5File['cell_coords']['Y'])
-        self.cell_coordinates_z = np.array(self.hdf5File['cell_coords']['Z'])
+        # self.cell_coordinates_x = np.array(self.hdf5File['cell_coords']['X'])
+        # self.cell_coordinates_y = np.array(self.hdf5File['cell_coords']['Y'])
+        # self.cell_coordinates_z = np.array(self.hdf5File['cell_coords']['Z'])
 
         # Getting timestep
         data = list(self.hdf5File.items())
         self.timestep = data[0][0]
 
         # Getting variable data
-        self.rho = np.array(self.hdf5File[self.timestep]['vars']['rho'])
-        self.prs = np.array(self.hdf5File[self.timestep]['vars']['prs'])
-        self.vx1 = np.array(self.hdf5File[self.timestep]['vars']['vx1'])
-        self.vx2 = np.array(self.hdf5File[self.timestep]['vars']['vx2'])
-        self.vx3 = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
+        self.variables["rho"] = np.array(self.hdf5File[self.timestep]['vars']['rho'])
+        self.variables["prs"] = np.array(self.hdf5File[self.timestep]['vars']['prs'])
+        self.variables["vx1"] = np.array(self.hdf5File[self.timestep]['vars']['vx1'])
+        self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx2'])
+        self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
         self.hdf5File.close()
 
         xmlPath = self.filename[:-2] + "xmf"
@@ -142,14 +143,22 @@ class SimulationData:
 
 
 class Tools:
+
+    @staticmethod
+    def computeTemperature(data):
+        kelvin = 1.072914e+05
+        mu = 1.37125
+        return data.variables["prs"] / data.variables["rho"] * kelvin * mu
+
     @staticmethod
     def computeTemperatureToFile(path, replace=False):
-        sim = SimulationData(path)
+        sim = SimulationData()
+        sim.loadData(path)
         kelvin = 1.072914e+05
         mu = 1.37125
         if replace:
             sim.removeData("Temp")
-        temp = sim.prs / sim.rho * kelvin * mu
+        temp = sim.variables["prs"] / sim.variables["rho"] * kelvin * mu
         sim.insertData(temp, "Temp")
 
     @staticmethod
@@ -161,10 +170,11 @@ class Tools:
 
     @staticmethod
     def computeVelocityToFile(path, replace=False):
-        sim = SimulationData(path)
+        sim = SimulationData()
+        sim.loadData(path)
         if replace:
             sim.removeData("VABS")
-        v = np.sqrt(sim.vx1**2 + sim.vx2**2)
+        v = np.sqrt(sim.variables["vx1"]**2 + sim.variables["vx2"]**2)
         sim.insertData(v, "VABS")
 
     @staticmethod
@@ -183,11 +193,11 @@ class Tools:
         temp = sim.loadVariable("Temp")[:,computeLimit]
         tempRange = [i for i,v in enumerate(temp) if v > 1000]
         tempRange = range(min(tempRange), max(tempRange))
-        rho = sim.rho[:,computeLimit] * sim.unitDensity
-        vx1 = sim.vx1[:,computeLimit] * sim.unitVelocity
+        rho = sim.variables["rho"][:,computeLimit] * sim.unitDensity
+        vx1 = sim.variables["vx1"][:,computeLimit] * sim.unitVelocity
 
 
-        surface = 0.5*np.pi / len(sim.x2) * sim.r[computeLimit]**2 * 2.0 * np.pi * sim.unitLength**2
+        surface = 0.5*np.pi / len(sim.x2) * sim.x1[computeLimit]**2 * 2.0 * np.pi * sim.unitLength**2
         massLoss = rho[tempRange] * surface * vx1[tempRange]
         totalMassLoss = np.add.reduce(massLoss)
         return totalMassLoss * sim.year / sim.solarMass, sim
@@ -229,31 +239,41 @@ class Tools:
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.clf()
         plt.figure(figsize=(6,4))
-        plt.pcolormesh(x, y, data.rho, norm=LogNorm(vmin=data.rho.min(), vmax=data.rho.max()), cmap=cm.inferno)
+        rho = data.variables["rho"]
+        plt.pcolormesh(x, y, rho, norm=LogNorm(vmin=rho.min(), vmax=rho.max()), cmap=cm.inferno)
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
         plt.savefig(filename + ".png", dpi=200)
 
     @staticmethod
-    def plotVelocityField(data, filename, overlay=False, wind_only=True):
+    def plotVelocityField(data, filename, dx1, dx2, x1_start=0, overlay=False, wind_only=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         if not overlay:
             plt.clf()
             plt.figure(figsize=(6,4))
 
-        plt.quiver(x, y, data.vx1, data.vx2)
+        if wind_only:
+            temp = Tools.computeTemperature(data)
+
+            for r in range(x1_start, len(data.x1), dx1):
+                tempRange = [i for i,t in enumerate(temp[:,r]) if t > 1000]
+                plt.quiver(x[:,r][tempRange[0]:tempRange[-1]:dx2],
+                           y[:,r][tempRange[0]:tempRange[-1]:dx2],
+                           data.variables["vx1"][:,r][tempRange[0]:tempRange[-1]:dx2],
+                           data.variables["vx2"][:,r][tempRange[0]:tempRange[-1]:dx2],
+                           width=0.002, scale=40)
+
+
         plt.savefig(filename + ".png", dpi=200)
 
 
 
 
 data = SimulationData()
-data.loadFrame("0001")
+data.loadFrame("0560")
 data.loadGridData()
 
 Tools.plotDensity(data, "test")
-Tools.plotVelocityField(data, "field")
-
-
-#xx, yy = np.meshgrid(data.x1, data.x2)
+Tools.plotVelocityField(data, "field", 5, 10, overlay=True, x1_start=150)
+plt.clf()
