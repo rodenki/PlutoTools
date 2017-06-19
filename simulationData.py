@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 import scipy
 from scipy.ndimage.interpolation import map_coordinates
-from scipy.interpolate import griddata
+from scipy import interpolate
 import xml.etree.cElementTree as xml
 from copy import deepcopy
 import matplotlib.pyplot as plt
@@ -247,7 +247,7 @@ class Tools:
         plt.savefig(filename + ".png", dpi=200)
 
     @staticmethod
-    def plotVelocityField(data, filename, dx1, dx2, x1_start=0, overlay=False, wind_only=True):
+    def plotVelocityField(data, filename, dx1=10, dx2=5, scale=40, width=0.001, x1_start=0, overlay=False, wind_only=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         if not overlay:
             plt.clf()
@@ -262,10 +262,32 @@ class Tools:
                            y[:,r][tempRange[0]:tempRange[-1]:dx2],
                            data.variables["vx1"][:,r][tempRange[0]:tempRange[-1]:dx2],
                            data.variables["vx2"][:,r][tempRange[0]:tempRange[-1]:dx2],
-                           width=0.002, scale=40)
+                           width=width, scale=scale, color='k')
+        else:
+            for r in range(x1_start, len(data.x1), dx1):
+                plt.quiver(x[:,r][::dx2],
+                           y[:,r][::dx2],
+                           data.variables["vx1"][:,r][::dx2],
+                           data.variables["vx2"][:,r][::dx2],
+                           width=width, scale=scale, color='k')
 
 
-        plt.savefig(filename + ".png", dpi=200)
+
+        plt.savefig(filename + ".png", dpi=400)
+
+    @staticmethod
+    def interpolateRadialGrid(data, newTicks):
+        for key, value in data.variables.items():
+            x1 = data.x1
+            interpolated = np.array(np.zeros(shape=(value.shape[0], len(newTicks))))
+
+            for i in range(value.shape[0]):
+                f = interpolate.interp1d(x1, value[i])
+                interpolated[i] = f(newTicks)
+
+            data.variables[key] = interpolated
+        data.x1 = newTicks
+
 
 
 
@@ -274,6 +296,7 @@ data = SimulationData()
 data.loadFrame("0560")
 data.loadGridData()
 
+Tools.interpolateRadialGrid(data, np.linspace(0.4, 12.0, 500))
 Tools.plotDensity(data, "test")
-Tools.plotVelocityField(data, "field", 5, 10, overlay=True, x1_start=150)
+Tools.plotVelocityField(data, "field", dx1=5, dx2=4, scale=60, width=0.001, overlay=True, x1_start=10)
 plt.clf()
