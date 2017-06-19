@@ -166,7 +166,7 @@ class Tools:
         for file in os.listdir(path):
             if file.endswith(".h5"):
                 print("Computing T for " + file)
-                DataHandler.computeTemperatureToFile(os.path.join(path, file), replace=replace)
+                Tools.computeTemperatureToFile(os.path.join(path, file), replace=replace)
 
     @staticmethod
     def computeVelocityToFile(path, replace=False):
@@ -182,7 +182,7 @@ class Tools:
         for file in os.listdir(path):
             if file.endswith(".h5"):
                 print("Computing v for " + file)
-                DataHandler.computeVelocityToFile(os.path.join(path, file), replace=replace)
+                Tools.computeVelocityToFile(os.path.join(path, file), replace=replace)
 
     @staticmethod
     def computeMassLoss(path):
@@ -190,7 +190,7 @@ class Tools:
         sim.loadData(path)
         sim.loadGridData()
         computeLimit = int(len(sim.dx1) * 0.95)
-        temp = sim.loadVariable("Temp")[:,computeLimit]
+        temp = Tools.computeTemperature(sim)[:,computeLimit]
         tempRange = [i for i,v in enumerate(temp) if v > 1000]
         tempRange = range(min(tempRange), max(tempRange))
         rho = sim.variables["rho"][:,computeLimit] * sim.unitDensity
@@ -208,7 +208,7 @@ class Tools:
         times = []
         for file in os.listdir(path):
             if file.endswith(".h5"):
-                loss, sim = DataHandler.computeMassLoss(os.path.join(path, file))
+                loss, sim = Tools.computeMassLoss(os.path.join(path, file))
                 times.append(float(sim.time) * sim.unitTimeYears)
                 losses.append(loss)
                 print("Massflux for " + file + ": " + str(loss))
@@ -216,7 +216,7 @@ class Tools:
 
     @staticmethod
     def plotMassLosses(path):
-        losses, times = DataHandler.computeMassLosses("./")
+        losses, times = Tools.computeMassLosses("./")
         losses = np.array(losses, dtype=np.double)
         times = np.array(times, dtype=np.double)
 
@@ -295,8 +295,8 @@ class Tools:
 data = SimulationData()
 data.loadFrame("0560")
 data.loadGridData()
-
-Tools.interpolateRadialGrid(data, np.linspace(0.4, 12.0, 500))
-Tools.plotDensity(data, "test")
-Tools.plotVelocityField(data, "field", dx1=5, dx2=4, scale=60, width=0.001, overlay=True, x1_start=10)
+Tools.computeMassLosses("./")
+#Tools.interpolateRadialGrid(data, np.linspace(0.4, 49.5, 500))
+#Tools.plotDensity(data, "test")
+#Tools.plotVelocityField(data, "field", dx1=5, dx2=4, scale=60, width=0.001, overlay=True, x1_start=10)
 plt.clf()
