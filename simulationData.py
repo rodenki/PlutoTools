@@ -6,6 +6,7 @@ import numpy as np
 import scipy
 from scipy.ndimage.interpolation import map_coordinates
 from scipy import interpolate
+from scipy import stats
 import xml.etree.cElementTree as xml
 from copy import deepcopy
 import matplotlib.pyplot as plt
@@ -28,6 +29,9 @@ class SimulationData:
         self.unitTimeYears = 1.588e-01
         self.solarMass = 2e33
         self.year = 31536000
+        self.mu = 1.37125
+        self.kb = 1.3806505e-16
+        self.mp = 1.67262171e-24
         self.time = 0.0
         self.cell_coordinates_x = np.array([])
         self.cell_coordinates_x = np.array([])
@@ -145,10 +149,23 @@ class SimulationData:
 class Tools:
 
     @staticmethod
+    def computeSonicPoints(data):
+        vabs = Tools.computeAbsoluteVelocities(data) * data.unitVelocity
+        temp = Tools.computeTemperature(data)
+        cs = np.sqrt(data.kb * temp / (data.mu * data.mp))
+        mach = vabs / cs
+        mach = stats.threshold(mach, threshmin=0.95, threshmax=1.05)
+        return mach
+
+    @staticmethod
     def computeTemperature(data):
         kelvin = 1.072914e+05
         mu = 1.37125
         return data.variables["prs"] / data.variables["rho"] * kelvin * mu
+
+    @staticmethod
+    def computeAbsoluteVelocities(data):
+        return np.sqrt(data.variables["vx1"]**2 + data.variables["vx2"]**2)
 
     @staticmethod
     def computeTemperatureToFile(path, replace=False):
@@ -235,6 +252,20 @@ class Tools:
         return x, y
 
     @staticmethod
+    def plotVariable(data, variable, filename, log=True):
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        plt.clf()
+        plt.figure(figsize=(6,4))
+        if log:
+            plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=variable.min(), vmax=variable.max()), cmap=cm.inferno)
+        else:
+            plt.pcolormesh(x, y, variable, cmap=cm.inferno)
+        plt.colorbar()
+        plt.xlabel(r'r')
+        plt.ylabel(r'z')
+        plt.savefig(filename + ".png", dpi=400)
+
+    @staticmethod
     def plotDensity(data, filename):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.clf()
@@ -244,7 +275,14 @@ class Tools:
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
-        plt.savefig(filename + ".png", dpi=200)
+        plt.savefig(filename + ".png", dpi=400)
+
+    @staticmethod
+    def plotSonicBarrier(data, filename):
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        mach = Tools.computeSonicPoints(data)
+        plt.scatter(x, y, 0.2*mach, c='r')
+        plt.savefig(filename + ".png", dpi=400)
 
     @staticmethod
     def plotVelocityField(data, filename, dx1=10, dx2=5, scale=40, width=0.001, x1_start=0, overlay=False, wind_only=True):
@@ -287,16 +325,3 @@ class Tools:
 
             data.variables[key] = interpolated
         data.x1 = newTicks
-
-
-
-
-
-data = SimulationData()
-data.loadFrame("0560")
-data.loadGridData()
-Tools.computeMassLosses("./")
-#Tools.interpolateRadialGrid(data, np.linspace(0.4, 49.5, 500))
-#Tools.plotDensity(data, "test")
-#Tools.plotVelocityField(data, "field", dx1=5, dx2=4, scale=60, width=0.001, overlay=True, x1_start=10)
-plt.clf()
