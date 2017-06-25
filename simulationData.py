@@ -32,6 +32,7 @@ class SimulationData:
         self.mu = 1.37125
         self.kb = 1.3806505e-16
         self.mp = 1.67262171e-24
+        self.G = 6.6726e-8
         self.time = 0.0
         self.cell_coordinates_x = np.array([])
         self.cell_coordinates_x = np.array([])
@@ -48,6 +49,9 @@ class SimulationData:
         self.vx3 = np.array([])
         self.timestep = ""
         self.hdf5File = None
+
+    def orbits(self, radius, time):
+        return np.sqrt(self.G * self.solarMass / (radius*self.unitLength)**3) * time * self.year / (2*np.pi)
 
     def loadVariable(self, title):
         try:
@@ -147,6 +151,15 @@ class SimulationData:
 
 
 class Tools:
+
+    @staticmethod
+    def deleteFilesWithStride(path, stride):
+        for current_file in os.listdir(path):
+            if current_file.endswith(".h5") or current_file.endswith(".xmf"):
+                frame = int(current_file.split('.')[1])
+                if frame % stride == 1:
+                    print("deleting frame " + str(frame))
+                    os.remove(os.path.join(path, current_file))
 
     @staticmethod
     def computeSonicPoints(data):
