@@ -372,14 +372,21 @@ class Tools:
     def plotIonizationParameter(data, filename, overlay=False):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.clf()
-        plt.figure(figsize=(6,4))
+        plt.figure(figsize=(8, 6))
         rho = data.variables["rho"] * data.unitNumberDensity
         temp = Tools.computeTemperature(data)
-        plt.pcolormesh(x, y, rho, norm=LogNorm(vmin=rho.min(), vmax=rho.max()), cmap=cm.inferno)
+        t = np.argwhere(temp < 1000)
+        for element in t:
+            rho[element[0], element[1]] = np.nan
+
+        r2 = x**2 + y**2
+        r2 *= data.unitLength**2
+        ion_param = np.log10(2e30 / (r2 * rho))
+        plt.pcolormesh(x, y, ion_param, vmin=np.nanmin(ion_param), vmax=np.nanmax(ion_param), cmap=cm.inferno)
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
-        # plt.savefig(filename + ".png", dpi=400)
+        plt.savefig(filename + ".png", dpi=400)
         plt.show()
 
     @staticmethod

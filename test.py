@@ -25,6 +25,6 @@ path = "./"
 data = sim.SimulationData()
 data.loadData("data.0000.dbl.h5")
 data.loadGridData()
-Tools.plotIonizationParameter(data, "data.0000.dbl.h5")
+Tools.plotIonizationParameter(data, "ionization_param")
 #Tools.removeFilesWithStride("./", 10)
 # plotUsefulQuantities()
