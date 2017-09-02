@@ -153,11 +153,11 @@ class SimulationData:
 class Tools:
 
     @staticmethod
-    def deleteFilesWithStride(path, stride):
+    def removeFilesWithStride(path, stride):
         for current_file in os.listdir(path):
             if current_file.endswith(".h5") or current_file.endswith(".xmf"):
                 frame = int(current_file.split('.')[1])
-                if frame % stride == 1:
+                if frame % stride != 0:
                     print("deleting frame " + str(frame))
                     os.remove(os.path.join(path, current_file))
 
@@ -245,7 +245,7 @@ class Tools:
         return losses, times
 
     @staticmethod
-    def plotMassLosses(path):
+    def plotMassLosses(path, filename="losses.eps"):
         losses, times = Tools.computeMassLosses("./")
         losses = np.array(losses, dtype=np.double)
         times = np.array(times, dtype=np.double)
@@ -255,7 +255,47 @@ class Tools:
         plt.semilogy(times, losses)
         plt.xlabel(r't [yr]')
         plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
-        plt.show()
+        plt.savefig(filename)
+
+    @staticmethod
+    def computeCumulativeMassLoss(path):
+        sim = SimulationData()
+        sim.loadData(path)
+        sim.loadGridData()
+
+        losses = []
+        cumulative_loss = 0.0
+
+        for r in range(len(sim.dx1)):
+            computeLimit = r
+            temp = Tools.computeTemperature(sim)[:,computeLimit]
+            tempRange = [i for i,v in enumerate(temp) if v > 1000]
+            tempRange = range(min(tempRange), max(tempRange))
+            rho = sim.variables["rho"][:,computeLimit] * sim.unitDensity
+            vx1 = sim.variables["vx1"][:,computeLimit] * sim.unitVelocity
+
+
+            surface = 0.5*np.pi / len(sim.x2) * sim.x1[computeLimit]**2 * 2.0 * np.pi * sim.unitLength**2
+            massLoss = rho[tempRange] * surface * vx1[tempRange]
+            totalMassLoss = np.add.reduce(massLoss)
+            totalMassLoss *= sim.year / sim.solarMass
+            if totalMassLoss < 0.0:
+                totalMassLoss = 0.0
+            cumulative_loss += totalMassLoss
+            losses.append(cumulative_loss)
+        return losses, sim
+
+    @staticmethod
+    def plotCumulativeMassloss(path, filename="cumulative_losses.eps"):
+        losses, sim = Tools.computeCumulativeMassLoss(path)
+        losses = np.array(losses, dtype=np.double)
+
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
+        plt.semilogy(sim.x1, losses)
+        plt.xlabel(r'r [AU]')
+        plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
+        plt.savefig(filename)
 
     @staticmethod
     def polarCoordsToCartesian(x1, x2):
@@ -296,6 +336,7 @@ class Tools:
         mach = Tools.computeSonicPoints(data)
         plt.scatter(x, y, 0.2*mach, c='r')
         plt.savefig(filename + ".png", dpi=400)
+        plt.close('all')
 
     @staticmethod
     def plotVelocityField(data, filename, dx1=10, dx2=5, scale=40, width=0.001, x1_start=0, overlay=False, wind_only=True):
@@ -325,6 +366,21 @@ class Tools:
 
 
         plt.savefig(filename + ".png", dpi=400)
+        plt.close('all')
+
+    @staticmethod
+    def plotIonizationParameter(data, filename, overlay=False):
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        plt.clf()
+        plt.figure(figsize=(6,4))
+        rho = data.variables["rho"] * data.unitNumberDensity
+        temp = Tools.computeTemperature(data)
+        plt.pcolormesh(x, y, rho, norm=LogNorm(vmin=rho.min(), vmax=rho.max()), cmap=cm.inferno)
+        plt.colorbar()
+        plt.xlabel(r'r')
+        plt.ylabel(r'z')
+        # plt.savefig(filename + ".png", dpi=400)
+        plt.show()
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
