@@ -21,9 +21,9 @@ def plotUsefulQuantities(data):
             Tools.plotVariable(data, data.variables["rho"], "field_zoom_" + frame, log=True)
             Tools.plotVelocityField(data, "field_zoom_" + frame, dx1=7, dx2=5, scale=50, width=0.002, overlay=True, x1_start=10)
             temp = Tools.computeTemperature(data)
-            mach = Tools.computeMachNumbers
+            mach = Tools.computeMachNumbers(data)
             Tools.plotVariable(data, temp, "temperature_" + frame, log=True)
-            Tools.plotVariable(data, mach, "mach_" + frame)
+            Tools.plotVariable(data, mach, "mach_" + frame, log=False)
             Tools.plotIonizationParameter(data, "ionization_param_" + frame)
 
 

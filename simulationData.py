@@ -395,7 +395,7 @@ class Tools:
         plt.xlabel(r'r')
         plt.ylabel(r'z')
         plt.savefig(filename + ".png", dpi=400)
-        plt.show()
+        # plt.show()
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
