@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def plotUsefulQuantities():
+def plotUsefulQuantities(data):
     for current_file in os.listdir(path):
         if current_file.endswith(".h5"):
             data.loadData(os.path.join(path, current_file))
@@ -20,11 +20,15 @@ def plotUsefulQuantities():
             Tools.interpolateRadialGrid(data, np.linspace(0.4, 10.0, 500))
             Tools.plotVariable(data, data.variables["rho"], "field_zoom_" + frame, log=True)
             Tools.plotVelocityField(data, "field_zoom_" + frame, dx1=7, dx2=5, scale=50, width=0.002, overlay=True, x1_start=10)
+            temp = Tools.computeTemperature(data)
+            Tools.plotVariable(data, temp, "temperature_" + frame, log=True)
+            Tools.plotIonizationParameter(data, "ionization_param_" + frame)
+
 
 path = "./"
 data = sim.SimulationData()
-data.loadData("data.0000.dbl.h5")
-data.loadGridData()
-Tools.plotIonizationParameter(data, "ionization_param")
+#data.loadData("data.0000.dbl.h5")
+#data.loadGridData()
+#Tools.plotIonizationParameter(data, "ionization_param")
 #Tools.removeFilesWithStride("./", 10)
-# plotUsefulQuantities()
+plotUsefulQuantities(data)
