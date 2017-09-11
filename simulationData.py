@@ -88,7 +88,7 @@ class SimulationData:
         self.variables["prs"] = np.array(self.hdf5File[self.timestep]['vars']['prs'])
         self.variables["vx1"] = np.array(self.hdf5File[self.timestep]['vars']['vx1'])
         self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx2'])
-        self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
+        self.variables["vx3"] = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
         self.hdf5File.close()
 
         xmlPath = self.filename[:-2] + "xmf"
