@@ -162,6 +162,14 @@ class Tools:
                     os.remove(os.path.join(path, current_file))
 
     @staticmethod
+    def computeMachNumbers(data):
+        vabs = Tools.computeAbsoluteVelocities(data) * data.unitVelocity
+        temp = Tools.computeTemperature(data)
+        cs = np.sqrt(data.kb * temp / (data.mu * data.mp))
+        mach = vabs / cs
+        return mach
+
+    @staticmethod
     def computeSonicPoints(data):
         vabs = Tools.computeAbsoluteVelocities(data) * data.unitVelocity
         temp = Tools.computeTemperature(data)
