@@ -162,6 +162,10 @@ class Tools:
                     os.remove(os.path.join(path, current_file))
 
     @staticmethod
+    def computeTotalMass(data):
+        pass
+
+    @staticmethod
     def computeMachNumbers(data):
         vabs = Tools.computeAbsoluteVelocities(data) * data.unitVelocity
         temp = Tools.computeTemperature(data)
@@ -327,16 +331,20 @@ class Tools:
         plt.savefig(filename + ".png", dpi=400)
 
     @staticmethod
-    def plotDensity(data, filename):
+    def plotDensity(data, filename, show=False):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.clf()
         plt.figure(figsize=(6,4))
         rho = data.variables["rho"]
         plt.pcolormesh(x, y, rho, norm=LogNorm(vmin=rho.min(), vmax=rho.max()), cmap=cm.inferno)
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
-        plt.savefig(filename + ".png", dpi=400)
+        if show:
+            plt.show()
+        else:
+            plt.savefig(filename + ".png", dpi=400)
+        plt.cla()
+        plt.close()
 
     @staticmethod
     def plotSonicBarrier(data, filename):
