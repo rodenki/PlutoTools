@@ -317,9 +317,8 @@ class Tools:
         return x, y
 
     @staticmethod
-    def plotVariable(data, variable, filename, log=True):
+    def plotVariable(data, variable, filename, log=True, show=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.clf()
         plt.figure(figsize=(6,4))
         if log:
             plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=variable.min(), vmax=variable.max()), cmap=cm.inferno)
@@ -328,10 +327,15 @@ class Tools:
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
-        plt.savefig(filename + ".png", dpi=400)
+        if show:
+            plt.show()
+        else:
+            plt.savefig(filename + ".png", dpi=400)
+        plt.cla()
+        plt.close()
 
     @staticmethod
-    def plotDensity(data, filename, show=False):
+    def plotDensity(data, filename, show=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=(6,4))
         rho = data.variables["rho"]
@@ -347,12 +351,16 @@ class Tools:
         plt.close()
 
     @staticmethod
-    def plotSonicBarrier(data, filename):
+    def plotSonicBarrier(data, filename, show=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         mach = Tools.computeSonicPoints(data)
         plt.scatter(x, y, 0.2*mach, c='r')
-        plt.savefig(filename + ".png", dpi=400)
-        plt.close('all')
+        if show:
+            plt.show()
+        else:
+            plt.savefig(filename + ".png", dpi=400)
+        plt.cla()
+        plt.close()
 
     @staticmethod
     def plotVelocityField(data, filename, dx1=10, dx2=5, scale=40, width=0.001, x1_start=0, overlay=False, wind_only=True):
@@ -385,9 +393,8 @@ class Tools:
         plt.close('all')
 
     @staticmethod
-    def plotIonizationParameter(data, filename, overlay=False):
+    def plotIonizationParameter(data, filename="ion_param", overlay=False, show=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.clf()
         plt.figure(figsize=(8, 6))
         rho = data.variables["rho"] * data.unitNumberDensity
         temp = Tools.computeTemperature(data)
@@ -402,8 +409,12 @@ class Tools:
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
-        plt.savefig(filename + ".png", dpi=400)
-        # plt.show()
+        if show:
+            plt.show()
+        else:
+            plt.savefig(filename + ".png", dpi=400)
+        plt.cla()
+        plt.close()
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
