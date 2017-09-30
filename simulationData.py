@@ -111,10 +111,10 @@ class SimulationData:
         [x2_coords.append(line.split('   ')) for line in x2_lines]
         x1_coords = np.asarray(x1_coords, dtype=np.float)
         x2_coords = np.asarray(x2_coords, dtype=np.float)
-        self.x1 = [0.5*(x1_coords[i][1] + x1_coords[i][2]) for i in range(len(x1_coords))]
-        self.x2 = [0.5*(x2_coords[i][1] + x2_coords[i][2]) for i in range(len(x2_coords))]
-        self.dx1 = [x1_coords[i][2] - x1_coords[i][1] for i in range(len(x1_coords))]
-        self.dx2 = [x2_coords[i][2] - x2_coords[i][1] for i in range(len(x2_coords))]
+        self.x1 = np.array([0.5*(x1_coords[i][1] + x1_coords[i][2]) for i in range(len(x1_coords))])
+        self.x2 = np.array([0.5*(x2_coords[i][1] + x2_coords[i][2]) for i in range(len(x2_coords))])
+        self.dx1 = np.array([x1_coords[i][2] - x1_coords[i][1] for i in range(len(x1_coords))])
+        self.dx2 = np.array([x2_coords[i][2] - x2_coords[i][1] for i in range(len(x2_coords))])
 
     def insertData(self, data, title):
         self.hdf5File = h5py.File(self.filename, 'a')
@@ -160,10 +160,6 @@ class Tools:
                 if frame % stride != 0:
                     print("deleting frame " + str(frame))
                     os.remove(os.path.join(path, current_file))
-
-    @staticmethod
-    def computeTotalMass(data):
-        pass
 
     @staticmethod
     def computeMachNumbers(data):
@@ -225,6 +221,17 @@ class Tools:
             if file.endswith(".h5"):
                 print("Computing v for " + file)
                 Tools.computeVelocityToFile(os.path.join(path, file), replace=replace)
+
+    @staticmethod
+    def computeTotalMass(data):
+        rho = data.variables["rho"]
+        # dx2 = 0.5*np.pi / len(sim.x2)
+        dV = (data.x1**2 - (data.x1 - data.dx1)**2) / (4.0*len(data.x2)) * 2.0 * np.pi * data.x1
+        dV = np.tile(dV, (400, 1))
+        mass = rho * dV
+        total = np.sum(mass) * data.unitDensity * data.unitLength**3
+        return total
+
 
     @staticmethod
     def computeMassLoss(path):

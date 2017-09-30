@@ -29,8 +29,10 @@ def plotUsefulQuantities(data):
 
 path = "./"
 data = sim.SimulationData()
-#data.loadData("data.0000.dbl.h5")
-#data.loadGridData()
+data.loadData("data.0000.dbl.h5")
+data.loadGridData()
+mass = Tools.computeTotalMass(data)
+print(mass / data.solarMass)
 #Tools.plotIonizationParameter(data, "ionization_param")
 #Tools.removeFilesWithStride("./", 10)
-plotUsefulQuantities(data)
+# plotUsefulQuantities(data)
