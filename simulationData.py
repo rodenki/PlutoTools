@@ -223,14 +223,29 @@ class Tools:
                 Tools.computeVelocityToFile(os.path.join(path, file), replace=replace)
 
     @staticmethod
-    def computeTotalMass(data):
+    def computeTotalMass(path):
+        data = SimulationData()
+        data.loadData(path)
+        data.loadGridData()
         rho = data.variables["rho"]
         # dx2 = 0.5*np.pi / len(sim.x2)
         dV = (data.x1**2 - (data.x1 - data.dx1)**2) / (4.0*len(data.x2)) * 2.0 * np.pi * data.x1
-        dV = np.tile(dV, (400, 1))
+        dV = np.tile(dV, (len(data.x2), 1))
         mass = rho * dV
         total = np.sum(mass) * data.unitDensity * data.unitLength**3
-        return total
+        return total, data
+
+    @staticmethod
+    def computeTotalMasses(path):
+        masses = []
+        times = []
+        for file in os.listdir(path):
+            if file.endswith(".h5"):
+                mass, sim = Tools.computeTotalMass(os.path.join(path, file))
+                times.append(float(sim.time) * sim.unitTimeYears)
+                masses.append(mass)
+                print("Mass for " + file + ": " + str(mass))
+        return masses, times
 
 
     @staticmethod
@@ -245,9 +260,9 @@ class Tools:
         rho = sim.variables["rho"][:,computeLimit] * sim.unitDensity
         vx1 = sim.variables["vx1"][:,computeLimit] * sim.unitVelocity
 
-
         surface = 0.5*np.pi / len(sim.x2) * sim.x1[computeLimit]**2 * 2.0 * np.pi * sim.unitLength**2
         massLoss = rho[tempRange] * surface * vx1[tempRange]
+        massLoss = rho * surface * vx1
         totalMassLoss = np.add.reduce(massLoss)
         return totalMassLoss * sim.year / sim.solarMass, sim
 
@@ -324,7 +339,7 @@ class Tools:
         return x, y
 
     @staticmethod
-    def plotVariable(data, variable, filename, log=True, show=True):
+    def plotVariable(data, variable, filename, log=True, show=False, clear=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=(6,4))
         if log:
@@ -338,11 +353,12 @@ class Tools:
             plt.show()
         else:
             plt.savefig(filename + ".png", dpi=400)
-        plt.cla()
-        plt.close()
+        if clear:
+            plt.cla()
+            plt.close()
 
     @staticmethod
-    def plotDensity(data, filename, show=True):
+    def plotDensity(data, filename, show=False):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=(6,4))
         rho = data.variables["rho"]
@@ -358,7 +374,7 @@ class Tools:
         plt.close()
 
     @staticmethod
-    def plotSonicBarrier(data, filename, show=True):
+    def plotSonicBarrier(data, filename, show=False):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         mach = Tools.computeSonicPoints(data)
         plt.scatter(x, y, 0.2*mach, c='r')
@@ -400,7 +416,7 @@ class Tools:
         plt.close('all')
 
     @staticmethod
-    def plotIonizationParameter(data, filename="ion_param", overlay=False, show=True):
+    def plotIonizationParameter(data, filename="ion_param", overlay=False, show=False):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=(8, 6))
         rho = data.variables["rho"] * data.unitNumberDensity
