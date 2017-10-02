@@ -42,11 +42,6 @@ class SimulationData:
         self.dx1 = np.array([])
         self.dx2 = np.array([])
         self.variables = {}
-        self.rho = np.array([])
-        self.prs = np.array([])
-        self.vx1 = np.array([])
-        self.vx2 = np.array([])
-        self.vx3 = np.array([])
         self.timestep = ""
         self.hdf5File = None
 
@@ -89,6 +84,8 @@ class SimulationData:
         self.variables["vx1"] = np.array(self.hdf5File[self.timestep]['vars']['vx1'])
         self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx2'])
         self.variables["vx3"] = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
+        self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
+        self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
         self.hdf5File.close()
 
         xmlPath = self.filename[:-2] + "xmf"
@@ -339,7 +336,7 @@ class Tools:
         return x, y
 
     @staticmethod
-    def plotVariable(data, variable, filename, log=True, show=False, clear=True):
+    def plotVariable(data, variable, filename="data", log=True, show=False, clear=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=(6,4))
         if log:
