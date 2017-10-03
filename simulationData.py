@@ -84,8 +84,11 @@ class SimulationData:
         self.variables["vx1"] = np.array(self.hdf5File[self.timestep]['vars']['vx1'])
         self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx2'])
         self.variables["vx3"] = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
-        self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
-        self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
+        try:
+            self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
+            self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
+        except KeyError:
+            print("no magnetic field present")
         self.hdf5File.close()
 
         xmlPath = self.filename[:-2] + "xmf"
@@ -391,9 +394,18 @@ class Tools:
     @staticmethod
     def plotVelocityField(data, filename="vel_field", dx1=10, dx2=5, scale=40,
                           width=0.001, x1_start=0, wind_only=True, clear=True,
-                          show=False):
+                          show=False, norm=True):
+        Tools.transformVelocityFieldToCylindrical(data)
+        Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(10, 8))
+
+        vx1 = data.variables["vx1"]
+        vx2 = data.variables["vx2"]
+
+        if norm:
+            n = np.sqrt(vx1**2 + vx2**2)
+            vx1 /= n
+            vx2 /= n
 
         if wind_only:
             temp = Tools.computeTemperature(data)
@@ -402,15 +414,15 @@ class Tools:
                 tempRange = [i for i,t in enumerate(temp[:,r]) if t > 1000]
                 plt.quiver(x[:,r][tempRange[0]:tempRange[-1]:dx2],
                            y[:,r][tempRange[0]:tempRange[-1]:dx2],
-                           data.variables["vx1"][:,r][tempRange[0]:tempRange[-1]:dx2],
-                           data.variables["vx2"][:,r][tempRange[0]:tempRange[-1]:dx2],
+                           vx1[:,r][tempRange[0]:tempRange[-1]:dx2],
+                           vx2[:,r][tempRange[0]:tempRange[-1]:dx2],
                            width=width, scale=scale, color='k')
         else:
             for r in range(x1_start, len(data.x1), dx1):
                 plt.quiver(x[:,r][::dx2],
                            y[:,r][::dx2],
-                           data.variables["vx1"][:,r][::dx2],
-                           data.variables["vx2"][:,r][::dx2],
+                           vx1[:,r][::dx2],
+                           vx2[:,r][::dx2],
                            width=width, scale=scale, color='k')
 
         if show:
@@ -421,6 +433,15 @@ class Tools:
         if clear:
             plt.cla()
             plt.close()
+
+    @staticmethod
+    def transformVelocityFieldToCylindrical(data):
+        vx1 = data.variables["vx1"]
+        vx2 = data.variables["vx2"]
+        x2 = np.transpose(np.tile(data.x2, (len(data.x1), 1)))
+
+        data.variables["vx1"] = vx1 * np.sin(x2) + vx2 * np.cos(x2)
+        data.variables["vx2"] = vx1 * np.cos(x2) - vx2 * np.sin(x2)
 
     @staticmethod
     def transformMagneticFieldToCylindrical(data):
@@ -449,7 +470,6 @@ class Tools:
             bx2 /= n
 
         # plt.figure(figsize=(10, 7))
-
         for r in range(x1_start, len(data.x1), dx1):
             plt.quiver(x[:,r][::dx2],
                        y[:,r][::dx2],
