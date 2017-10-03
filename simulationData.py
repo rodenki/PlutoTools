@@ -34,9 +34,9 @@ class SimulationData:
         self.mp = 1.67262171e-24
         self.G = 6.6726e-8
         self.time = 0.0
-        self.cell_coordinates_x = np.array([])
-        self.cell_coordinates_x = np.array([])
-        self.cell_coordinates_x = np.array([])
+        self.cell_coordinates_x1 = np.array([])
+        self.cell_coordinates_x2 = np.array([])
+        self.cell_coordinates_x3 = np.array([])
         self.x1 = np.array([])
         self.x2 = np.array([])
         self.dx1 = np.array([])
@@ -70,9 +70,9 @@ class SimulationData:
         except NameError:
             print("File " + filename + " not found")
 
-        # self.cell_coordinates_x = np.array(self.hdf5File['cell_coords']['X'])
-        # self.cell_coordinates_y = np.array(self.hdf5File['cell_coords']['Y'])
-        # self.cell_coordinates_z = np.array(self.hdf5File['cell_coords']['Z'])
+        self.cell_coordinates_x1 = np.array(self.hdf5File['cell_coords']['X'])
+        self.cell_coordinates_x2 = np.array(self.hdf5File['cell_coords']['Y'])
+        self.cell_coordinates_x3 = np.array(self.hdf5File['cell_coords']['Z'])
 
         # Getting timestep
         data = list(self.hdf5File.items())
@@ -321,12 +321,15 @@ class Tools:
         losses, sim = Tools.computeCumulativeMassLoss(path)
         losses = np.array(losses, dtype=np.double)
 
+        plt.figure(figsize=(10, 8))
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
         plt.semilogy(sim.x1, losses)
         plt.xlabel(r'r [AU]')
         plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
         plt.savefig(filename)
+        plt.cla()
+        plt.close()
 
     @staticmethod
     def polarCoordsToCartesian(x1, x2):
@@ -338,7 +341,7 @@ class Tools:
     @staticmethod
     def plotVariable(data, variable, filename="data", log=True, show=False, clear=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(6,4))
+        plt.figure(figsize=(10, 8))
         if log:
             plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=variable.min(), vmax=variable.max()), cmap=cm.inferno)
         else:
@@ -355,9 +358,9 @@ class Tools:
             plt.close()
 
     @staticmethod
-    def plotDensity(data, filename, show=False):
+    def plotDensity(data, filename="dens", show=False, clear=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(6,4))
+        plt.figure(figsize=(10, 7))
         rho = data.variables["rho"]
         plt.pcolormesh(x, y, rho, norm=LogNorm(vmin=rho.min(), vmax=rho.max()), cmap=cm.inferno)
         plt.colorbar()
@@ -367,11 +370,12 @@ class Tools:
             plt.show()
         else:
             plt.savefig(filename + ".png", dpi=400)
-        plt.cla()
-        plt.close()
+        if clear:
+            plt.cla()
+            plt.close()
 
     @staticmethod
-    def plotSonicBarrier(data, filename, show=False):
+    def plotSonicBarrier(data, filename="sonic", show=False, clear=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         mach = Tools.computeSonicPoints(data)
         plt.scatter(x, y, 0.2*mach, c='r')
@@ -379,15 +383,17 @@ class Tools:
             plt.show()
         else:
             plt.savefig(filename + ".png", dpi=400)
-        plt.cla()
-        plt.close()
+
+        if clear:
+            plt.cla()
+            plt.close()
 
     @staticmethod
-    def plotVelocityField(data, filename, dx1=10, dx2=5, scale=40, width=0.001, x1_start=0, overlay=False, wind_only=True):
+    def plotVelocityField(data, filename="vel_field", dx1=10, dx2=5, scale=40,
+                          width=0.001, x1_start=0, wind_only=True, clear=True,
+                          show=False):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        if not overlay:
-            plt.clf()
-            plt.figure(figsize=(6,4))
+        plt.figure(figsize=(10, 8))
 
         if wind_only:
             temp = Tools.computeTemperature(data)
@@ -407,15 +413,64 @@ class Tools:
                            data.variables["vx2"][:,r][::dx2],
                            width=width, scale=scale, color='k')
 
+        if show:
+            plt.show()
+        else:
+            plt.savefig(filename + ".png", dpi=400)
 
-
-        plt.savefig(filename + ".png", dpi=400)
-        plt.close('all')
+        if clear:
+            plt.cla()
+            plt.close()
 
     @staticmethod
-    def plotIonizationParameter(data, filename="ion_param", overlay=False, show=False):
+    def transformMagneticFieldToCylindrical(data):
+        bx1 = data.variables["bx1"]
+        bx2 = data.variables["bx2"]
+        x2 = np.transpose(np.tile(data.x2, (len(data.x1), 1)))
+
+        data.variables["bx1"] = bx1 * np.sin(x2) + bx2 * np.cos(x2)
+        data.variables["bx2"] = bx1 * np.cos(x2) - bx2 * np.sin(x2)
+
+    @staticmethod
+    def plotMagneticField(data, filename="mag_field", dx1=10, dx2=5, scale=40,
+                          width=0.001, x1_start=0, clear=True, show=False,
+                          norm=True):
+
+        Tools.transformMagneticFieldToCylindrical(data)
+        Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(8, 6))
+
+        bx1 = data.variables["bx1"]
+        bx2 = data.variables["bx2"]
+
+        if norm:
+            n = np.sqrt(bx1**2 + bx2**2)
+            bx1 /= n
+            bx2 /= n
+
+        # plt.figure(figsize=(10, 7))
+
+        for r in range(x1_start, len(data.x1), dx1):
+            plt.quiver(x[:,r][::dx2],
+                       y[:,r][::dx2],
+                       bx1[:,r][::dx2],
+                       bx2[:,r][::dx2],
+                       width=width, scale=scale, color='k')
+
+        if show:
+            plt.show()
+        else:
+            plt.savefig(filename + ".png", dpi=400)
+
+        if clear:
+            plt.cla()
+            plt.close()
+
+    @staticmethod
+    def plotIonizationParameter(data, filename="ion_param", clear=True,
+                                show=False):
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        plt.figure(figsize=(10, 8))
         rho = data.variables["rho"] * data.unitNumberDensity
         temp = Tools.computeTemperature(data)
         t = np.argwhere(temp < 1000)
@@ -433,8 +488,10 @@ class Tools:
             plt.show()
         else:
             plt.savefig(filename + ".png", dpi=400)
-        plt.cla()
-        plt.close()
+
+        if clear:
+            plt.cla()
+            plt.close()
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
