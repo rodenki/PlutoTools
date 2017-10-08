@@ -5,6 +5,7 @@ import h5py
 import numpy as np
 import scipy
 from scipy.ndimage.interpolation import map_coordinates
+from scipy import interpolate
 from scipy import stats
 import xml.etree.cElementTree as xml
 from copy import deepcopy
@@ -83,8 +84,11 @@ class SimulationData:
         self.variables["vx1"] = np.array(self.hdf5File[self.timestep]['vars']['vx1'])
         self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx2'])
         self.variables["vx3"] = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
-        self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
-        self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
+        try:
+            self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
+            self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
+        except KeyError:
+            print("no magnetic field present")
         self.hdf5File.close()
 
         xmlPath = self.filename[:-2] + "xmf"
@@ -338,20 +342,13 @@ class Tools:
         return x, y
 
     @staticmethod
-    def plotVariable(data, variable, filename="data", log=True, show=False,
-                     clear=True, interpolate=False, resolution=1000):
+    def plotVariable(data, variable, filename="data", log=True, show=False, clear=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(10, 7))
-
-        if interpolate:
-            ranges = [np.min(x), np.max(y), resolution]
-            x, y, variable = Tools.interpolateToUniformGrid(data, variable, ranges, ranges)
-
+        plt.figure(figsize=(10, 8))
         if log:
-            plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable), vmax=np.nanmax(variable)), cmap=cm.inferno)
+            plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=variable.min(), vmax=variable.max()), cmap=cm.inferno)
         else:
             plt.pcolormesh(x, y, variable, cmap=cm.inferno)
-
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
@@ -364,15 +361,11 @@ class Tools:
             plt.close()
 
     @staticmethod
-    def plotDensity(data, filename="dens", show=False, clear=True,
-                    interpolate=False, resolution=1000):
+    def plotDensity(data, filename="dens", show=False, clear=True):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=(10, 7))
         rho = data.variables["rho"]
-        if interpolate:
-            ranges = [np.min(x), np.max(y), resolution]
-            x, y, rho = Tools.interpolateToUniformGrid(data, rho, ranges, ranges)
-        plt.pcolormesh(x, y, rho, norm=LogNorm(vmin=np.nanmin(rho), vmax=np.nanmax(rho)), cmap=cm.inferno)
+        plt.pcolormesh(x, y, rho, norm=LogNorm(vmin=rho.min(), vmax=rho.max()), cmap=cm.inferno)
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
@@ -465,14 +458,11 @@ class Tools:
                           norm=True):
 
         Tools.transformMagneticFieldToCylindrical(data)
-        # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
+        Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+
         bx1 = data.variables["bx1"]
         bx2 = data.variables["bx2"]
-
-        ranges = [np.min(x), np.max(y), 100]
-        x, y, bx1 = Tools.interpolateToUniformGrid(data, bx1, ranges, ranges)
-        x, y, bx2 = Tools.interpolateToUniformGrid(data, bx2, ranges, ranges)
 
         if norm:
             n = np.sqrt(bx1**2 + bx2**2)
@@ -480,41 +470,12 @@ class Tools:
             bx2 /= n
 
         # plt.figure(figsize=(10, 7))
-        plt.quiver(x, y, bx1, bx2,
-                   width=width, scale=scale, color='k')
-
-        if show:
-            plt.show()
-        else:
-            plt.savefig(filename + ".png", dpi=400)
-
-        if clear:
-            plt.cla()
-            plt.close()
-
-    @staticmethod
-    def plotMagneticFieldLines(data, filename="mag_fieldlines", dx1=10, dx2=5, scale=40,
-                          width=0.001, x1_start=0, clear=True, show=False,
-                          norm=True):
-
-        Tools.transformMagneticFieldToCylindrical(data)
-        # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
-        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        bx1 = data.variables["bx1"]
-        bx2 = data.variables["bx2"]
-
-        ranges = [np.min(x), np.max(y), 1000]
-        x, y, bx1 = Tools.interpolateToUniformGrid(data, bx1, ranges, ranges)
-        x, y, bx2 = Tools.interpolateToUniformGrid(data, bx2, ranges, ranges)
-
-        if norm:
-            n = np.sqrt(bx1**2 + bx2**2)
-            bx1 /= n
-            bx2 /= n
-
-        # plt.figure(figsize=(10, 7))
-        plt.streamplot(x, y, bx1, bx2, density=2, arrowstyle='->', linewidth=1,
-                       arrowsize=1.5)
+        for r in range(x1_start, len(data.x1), dx1):
+            plt.quiver(x[:,r][::dx2],
+                       y[:,r][::dx2],
+                       bx1[:,r][::dx2],
+                       bx2[:,r][::dx2],
+                       width=width, scale=scale, color='k')
 
         if show:
             plt.show()
@@ -559,19 +520,8 @@ class Tools:
             interpolated = np.array(np.zeros(shape=(value.shape[0], len(newTicks))))
 
             for i in range(value.shape[0]):
-                f = scipy.interpolate.interp1d(x1, value[i])
+                f = interpolate.interp1d(x1, value[i])
                 interpolated[i] = f(newTicks)
 
             data.variables[key] = interpolated
         data.x1 = newTicks
-
-    @staticmethod
-    def interpolateToUniformGrid(data, variable, x_range, y_range):
-        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        x = np.ravel(x)
-        y = np.ravel(y)
-        variable = np.ravel(variable)
-        points = np.column_stack((x, y))
-        grid_x, grid_y = np.meshgrid(np.linspace(*x_range), np.linspace(*y_range))
-        newVariable = scipy.interpolate.griddata(points, variable, (grid_x, grid_y))
-        return grid_x, grid_y, newVariable
