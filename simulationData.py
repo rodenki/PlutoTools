@@ -87,7 +87,8 @@ class SimulationData:
             self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
             self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
         except KeyError:
-            print("Magnetic field not present.")
+            pass
+            # print("Magnetic field not present.")
 
         self.hdf5File.close()
 
@@ -253,17 +254,15 @@ class Tools:
         sim = SimulationData()
         sim.loadData(path)
         sim.loadGridData()
-        computeLimit = int(len(sim.dx1) * 0.95)
+        computeLimit = int(len(sim.dx1) * 0.99)
+        rho = sim.variables["rho"][:,computeLimit] * sim.unitDensity
+        vx1 = sim.variables["vx1"][:,computeLimit] * sim.unitVelocity
         temp = Tools.computeTemperature(sim)[:,computeLimit]
         tempRange = [i for i,v in enumerate(temp) if v > 1000]
         tempRange = range(min(tempRange), max(tempRange))
-        rho = sim.variables["rho"][:,computeLimit] * sim.unitDensity
-        vx1 = sim.variables["vx1"][:,computeLimit] * sim.unitVelocity
-
         surface = 0.5*np.pi / len(sim.x2) * sim.x1[computeLimit]**2 * 2.0 * np.pi * sim.unitLength**2
-        massLoss = rho[tempRange] * surface * vx1[tempRange]
-        massLoss = rho * surface * vx1
-        totalMassLoss = np.add.reduce(massLoss)
+        massLoss = surface * rho[tempRange] * vx1[tempRange]
+        totalMassLoss = np.sum(massLoss)
         return totalMassLoss * sim.year / sim.solarMass, sim
 
     @staticmethod
@@ -283,6 +282,7 @@ class Tools:
         losses, times = Tools.computeMassLosses("./")
         losses = np.array(losses, dtype=np.double)
         times = np.array(times, dtype=np.double)
+        np.savetxt("losses.dat", (times, losses))
 
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
