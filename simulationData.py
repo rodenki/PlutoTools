@@ -343,12 +343,12 @@ class Tools:
 
     @staticmethod
     def plotVariable(data, variable, filename="data", log=True, show=False,
-                     clear=True, interpolate=False, resolution=1000):
+                     clear=True, interpolate=False, resolution=1000, interpolateRange=[0.33, 99.0]):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=(10, 7))
 
         if interpolate:
-            ranges = [np.min(x), np.max(y), resolution]
+            ranges = [interpolateRange[0], interpolateRange[1], resolution]
             x, y, variable = Tools.interpolateToUniformGrid(data, variable, ranges, ranges)
 
         if log:
