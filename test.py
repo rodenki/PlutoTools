@@ -3,6 +3,7 @@ from simulationData import Tools
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import argparse
 
 def plotUsefulQuantities(data):
     for current_file in os.listdir(path):
@@ -20,27 +21,38 @@ def plotUsefulQuantities(data):
             # Tools.interpolateRadialGrid(data, np.linspace(0.4, 10.0, 500))
             # Tools.plotVariable(data, data.variables["rho"], "field_zoom_" + frame, log=True)
             temp = Tools.computeTemperature(data)
-            mach = Tools.computeMachNumbers(data)
-            Tools.plotVariable(data, mach, "mach_" + frame, log=False)
-            Tools.plotIonizationParameter(data, "ionization_param_" + frame)
-            Tools.plotVariable(data, temp, "mag_field_" + frame, log=True, clear=False)
-            Tools.plotMagneticFieldLines(data, filename="mag_fieldlines_" + frame, show=False, norm=True)
-            # Tools.plotVelocityField(data, "vel_field_" + frame, dx1=7, dx2=5, scale=50, width=0.002, x1_start=10, wind_only=True, norm=True)
+            # mach = Tools.computeMachNumbers(data)
+            Tools.plotVariable(data, temp, "vel_field_" + frame, log=True, clear=False)
+            Tools.plotVelocityField(data, "vel_field_" + frame, dx1=7, dx2=5, scale=50, width=0.002, x1_start=10, wind_only=True, norm=True)
+
+            # Tools.plotVariable(data, mach, "mach_" + frame, log=False)
+            # Tools.plotIonizationParameter(data, "ionization_param_" + frame)
 
 
 path = "./"
 data = sim.SimulationData()
+parser = argparse.ArgumentParser()
+parser.add_argument("frame")
+args = parser.parse_args()
+frame = args.frame
+for i in range(4-len(frame)):
+    frame = "0" + frame
+frame = "data." + frame + ".dbl.h5"
+data.loadData(frame)
 data.loadGridData()
-data.loadData("data.0011.dbl.h5")
-mach = Tools.computeMachNumbers(data)
-Tools.plotVariable(data, mach, show=True, log=False, interpolate=False)
-# temp = Tools.computeTemperature(data)
 
-# Tools.plotVariable(data, data.variables["bx1"], show=True, log=False)
-# Tools.plotVariable(data, data.variables["bx2"], show=True, log=False)
-# Tools.plotVariable(data, np.sqrt(data.variables["bx1"]**2 + data.variables["bx2"]**2), show=True, log=True)
-# Tools.plotDensity(data, show=False, clear=False)
-# Tools.plotMagneticFieldLines(data, show=True, norm=False)
+temp = Tools.computeTemperature(data)
+x_range=[0.0, 99.0, 1000]
+y_range=[0.0, 99.0, 1000]
+rho = data.variables["rho"] * data.unitNumberDensity
+bx = data.variables["bx1"]
+by = data.variables["bx2"]
+bz = data.variables["bx3"]
+b_tot = np.sqrt(bx**2 + by**2 + bz**2)
+Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
+Tools.plotMagneticFieldLines(data, show=True, norm=True, x_range=x_range, y_range=y_range)
+
+
 # masses, times = Tools.computeTotalMasses("./")
 # Tools.plotMassLosses('./')
 # Tools.plotIonizationParameter(data, "ionization_param")

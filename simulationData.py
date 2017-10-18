@@ -86,6 +86,7 @@ class SimulationData:
         try:
             self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
             self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
+            self.variables["bx3"] = np.array(self.hdf5File[self.timestep]['vars']['bx3'])
         except KeyError:
             pass
             # print("Magnetic field not present.")
@@ -343,13 +344,12 @@ class Tools:
 
     @staticmethod
     def plotVariable(data, variable, filename="data", log=True, show=False,
-                     clear=True, interpolate=False, resolution=1000, interpolateRange=[0.33, 99.0]):
+                     clear=True, interpolate=False, x_range=[0.33, 99, 100], y_range=[0.33, 99, 100]):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(10, 7))
+        plt.figure(figsize=(12, 9))
 
         if interpolate:
-            ranges = [interpolateRange[0], interpolateRange[1], resolution]
-            x, y, variable = Tools.interpolateToUniformGrid(data, variable, ranges, ranges)
+            x, y, variable = Tools.interpolateToUniformGrid(data, variable, x_range, y_range)
 
         if log:
             plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable), vmax=np.nanmax(variable)), cmap=cm.inferno)
@@ -466,7 +466,7 @@ class Tools:
     @staticmethod
     def plotMagneticField(data, filename="mag_field", dx1=10, dx2=5, scale=40,
                           width=0.001, x1_start=0, clear=True, show=False,
-                          norm=True):
+                          norm=True, x_range=[0.33, 99, 100], y_range=[0.33, 99, 100]):
 
         Tools.transformMagneticFieldToCylindrical(data)
         # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
@@ -474,9 +474,8 @@ class Tools:
         bx1 = data.variables["bx1"]
         bx2 = data.variables["bx2"]
 
-        ranges = [np.min(x), np.max(y), 100]
-        x, y, bx1 = Tools.interpolateToUniformGrid(data, bx1, ranges, ranges)
-        x, y, bx2 = Tools.interpolateToUniformGrid(data, bx2, ranges, ranges)
+        x, y, bx1 = Tools.interpolateToUniformGrid(data, bx1, x_range, y_range)
+        x, y, bx2 = Tools.interpolateToUniformGrid(data, bx2, x_range, y_range)
 
         if norm:
             n = np.sqrt(bx1**2 + bx2**2)
@@ -499,7 +498,7 @@ class Tools:
     @staticmethod
     def plotMagneticFieldLines(data, filename="mag_fieldlines", dx1=10, dx2=5, scale=40,
                           width=0.001, x1_start=0, clear=True, show=False,
-                          norm=True):
+                          norm=True, x_range=[0.33, 99, 100], y_range=[0.33, 99, 100]):
 
         Tools.transformMagneticFieldToCylindrical(data)
         # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
@@ -507,9 +506,8 @@ class Tools:
         bx1 = data.variables["bx1"]
         bx2 = data.variables["bx2"]
 
-        ranges = [np.min(x), np.max(y), 1000]
-        x, y, bx1 = Tools.interpolateToUniformGrid(data, bx1, ranges, ranges)
-        x, y, bx2 = Tools.interpolateToUniformGrid(data, bx2, ranges, ranges)
+        x, y, bx1 = Tools.interpolateToUniformGrid(data, bx1, x_range, y_range)
+        x, y, bx2 = Tools.interpolateToUniformGrid(data, bx2, x_range, y_range)
 
         if norm:
             n = np.sqrt(bx1**2 + bx2**2)
