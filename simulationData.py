@@ -45,7 +45,7 @@ class SimulationData:
         self.hdf5File = None
 
     def orbits(self, radius, time):
-        return np.sqrt(self.G * self.solarMass / (radius*self.unitLength)**3) * time * self.year / (2*np.pi)
+        return time * self.year * np.sqrt(self.G * self.solarMass / (radius*self.unitLength)**3) / (2.0 * np.pi)
 
     def loadVariable(self, title):
         try:
@@ -96,7 +96,7 @@ class SimulationData:
         xmlPath = self.filename[:-2] + "xmf"
         tree = xml.parse(xmlPath)
         root = tree.getroot()
-        self.time = root[0][0][0].get("Value")
+        self.time = float(root[0][0][0].get("Value"))
 
     def loadFrame(self, frame):
         self.loadData("data." + frame + ".dbl.h5")
@@ -359,6 +359,9 @@ class Tools:
         plt.colorbar()
         plt.xlabel(r'r')
         plt.ylabel(r'z')
+        orbits = data.orbits(0.33, data.time)
+        print(orbits)
+        plt.title("t = " + str(data.time) + ", " + str(orbits) + " orbits")
         if show:
             plt.show()
         else:

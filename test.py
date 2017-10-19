@@ -28,22 +28,32 @@ def plotUsefulQuantities(data):
             # Tools.plotVariable(data, mach, "mach_" + frame, log=False)
             # Tools.plotIonizationParameter(data, "ionization_param_" + frame)
 
+def getArgs():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("frame")
+    parser.add_argument("x_min")
+    parser.add_argument("x_max")
+    parser.add_argument("x_res")
+    parser.add_argument("y_min")
+    parser.add_argument("y_max")
+    parser.add_argument("y_res")
+    args = parser.parse_args()
+    frame = args.frame
+    for i in range(4-len(frame)):
+        frame = "0" + frame
+    frame = "data." + frame + ".dbl.h5"
+    return frame, [float(args.x_min), float(args.x_max), float(args.x_res)], [float(args.y_min), float(args.y_max), float(args.y_res)]
+
+
 
 path = "./"
 data = sim.SimulationData()
-parser = argparse.ArgumentParser()
-parser.add_argument("frame")
-args = parser.parse_args()
-frame = args.frame
-for i in range(4-len(frame)):
-    frame = "0" + frame
-frame = "data." + frame + ".dbl.h5"
+frame, x_range, y_range = getArgs()
 data.loadData(frame)
 data.loadGridData()
 
+
 temp = Tools.computeTemperature(data)
-x_range=[0.0, 99.0, 1000]
-y_range=[0.0, 99.0, 1000]
 rho = data.variables["rho"] * data.unitNumberDensity
 bx = data.variables["bx1"]
 by = data.variables["bx2"]
