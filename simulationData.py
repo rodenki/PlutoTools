@@ -234,7 +234,7 @@ class Tools:
         dV = (data.x1**2 - (data.x1 - data.dx1)**2) / (4.0*len(data.x2)) * 2.0 * np.pi * data.x1
         dV = np.tile(dV, (len(data.x2), 1))
         mass = rho * dV
-        total = np.sum(mass) * data.unitDensity * data.unitLength**3
+        total = np.sum(mass) * data.unitDensity * data.unitLength**3 / data.solarMass
         return total, data
 
     @staticmethod
@@ -343,25 +343,27 @@ class Tools:
         return x, y
 
     @staticmethod
-    def plotVariable(data, variable, filename="data", log=True, show=False,
-                     clear=True, interpolate=False, x_range=[0.33, 99, 100], y_range=[0.33, 99, 100]):
+    def plotVariable(data, variable, filename="data", log=True, show=True,
+                     clear=True, interpolate=False, x_range=[0.33, 99, 100],
+                     y_range=[0.33, 99, 100], vlimits=(0, 1)):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(12, 9))
+        plt.figure(figsize=(10, 7))
 
         if interpolate:
             x, y, variable = Tools.interpolateToUniformGrid(data, variable, x_range, y_range)
 
         if log:
-            plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable), vmax=np.nanmax(variable)), cmap=cm.inferno)
+            plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable),
+                                                        vmax=np.nanmax(variable)), cmap=cm.inferno)
         else:
-            plt.pcolormesh(x, y, variable, cmap=cm.inferno)
+            plt.pcolormesh(x, y, variable, cmap=cm.inferno, vmin=vlimits[0],
+                           vmax=vlimits[1])
 
         plt.colorbar()
-        plt.xlabel(r'r')
-        plt.ylabel(r'z')
+        plt.xlabel('Radius [AU]')
+        plt.ylabel('z [AU]')
         orbits = data.orbits(0.33, data.time)
-        print(orbits)
-        plt.title("t = " + str(data.time) + ", " + str(orbits) + " orbits")
+        plt.title("t = " + str(data.time) + ", " + str(int(orbits)) + " orbits")
         if show:
             plt.show()
         else:
@@ -519,6 +521,38 @@ class Tools:
 
         # plt.figure(figsize=(10, 7))
         plt.streamplot(x, y, bx1, bx2, density=2, arrowstyle='->', linewidth=1,
+                       arrowsize=1.5)
+
+        if show:
+            plt.show()
+        else:
+            plt.savefig(filename + ".png", dpi=400)
+
+        if clear:
+            plt.cla()
+            plt.close()
+
+    @staticmethod
+    def plotVelocityFieldLines(data, filename="vel_fieldlines", dx1=10, dx2=5, scale=40,
+                          width=0.001, x1_start=0, clear=True, show=False,
+                          norm=True, x_range=[0.33, 99, 100], y_range=[0.33, 99, 100]):
+
+        Tools.transformVelocityFieldToCylindrical(data)
+        # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        vx1 = data.variables["vx1"]
+        vx2 = data.variables["vx2"]
+
+        x, y, vx1 = Tools.interpolateToUniformGrid(data, vx1, x_range, y_range)
+        x, y, vx2 = Tools.interpolateToUniformGrid(data, vx2, x_range, y_range)
+
+        if norm:
+            n = np.sqrt(vx1**2 + vx2**2)
+            vx1 /= n
+            vx2 /= n
+
+        # plt.figure(figsize=(10, 7))
+        plt.streamplot(x, y, vx1, vx2, density=3, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
 
         if show:
