@@ -309,7 +309,6 @@ class Tools:
             rho = sim.variables["rho"][:,computeLimit] * sim.unitDensity
             vx1 = sim.variables["vx1"][:,computeLimit] * sim.unitVelocity
 
-
             surface = 0.5*np.pi / len(sim.x2) * sim.x1[computeLimit]**2 * 2.0 * np.pi * sim.unitLength**2
             massLoss = rho[tempRange] * surface * vx1[tempRange]
             totalMassLoss = np.add.reduce(massLoss)
@@ -336,6 +335,22 @@ class Tools:
         plt.close()
 
     @staticmethod
+    def averageFrames(path, variable, frameRange):
+        frames = []
+        sim = SimulationData()
+
+        for filename in os.listdir(path):
+            if filename.endswith(".h5"):
+                frameIndex = int(filename.split('.')[1])
+                if frameIndex in frameRange:
+                    sim.loadData(os.path.join(path, filename))
+                    sim.loadGridData()
+                    frames.append(sim.variables[variable])
+        frames = np.array(frames)
+        averaged = np.mean(frames, axis=0)
+        return averaged
+
+    @staticmethod
     def polarCoordsToCartesian(x1, x2):
         r_matrix, th_matrix = np.meshgrid(x1, x2)
         x = r_matrix * np.sin(th_matrix)
@@ -348,6 +363,7 @@ class Tools:
                      y_range=[0.33, 99, 100], vlimits=(0, 1)):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=(10, 7))
+        plt.tight_layout()
 
         if interpolate:
             x, y, variable = Tools.interpolateToUniformGrid(data, variable, x_range, y_range)
@@ -362,12 +378,12 @@ class Tools:
         plt.colorbar()
         plt.xlabel('Radius [AU]')
         plt.ylabel('z [AU]')
-        orbits = data.orbits(0.33, data.time)
+        orbits = data.orbits(5, data.time)
         plt.title("t = " + str(data.time) + ", " + str(int(orbits)) + " orbits")
         if show:
             plt.show()
         else:
-            plt.savefig(filename + ".png", dpi=400)
+            plt.savefig(filename + ".png", dpi=400, bbox_inches='tight')
         if clear:
             plt.cla()
             plt.close()
@@ -444,7 +460,7 @@ class Tools:
         if show:
             plt.show()
         else:
-            plt.savefig(filename + ".png", dpi=400)
+            plt.savefig(filename + ".png", dpi=400, bbox_inches='tight')
 
         if clear:
             plt.cla()
@@ -494,7 +510,7 @@ class Tools:
         if show:
             plt.show()
         else:
-            plt.savefig(filename + ".png", dpi=400)
+            plt.savefig(filename + ".png", dpi=400, bbox_inches='tight')
 
         if clear:
             plt.cla()
@@ -526,7 +542,7 @@ class Tools:
         if show:
             plt.show()
         else:
-            plt.savefig(filename + ".png", dpi=400)
+            plt.savefig(filename + ".png", dpi=400, bbox_inches='tight')
 
         if clear:
             plt.cla()
@@ -558,7 +574,7 @@ class Tools:
         if show:
             plt.show()
         else:
-            plt.savefig(filename + ".png", dpi=400)
+            plt.savefig(filename + ".png", dpi=400, bbox_inches='tight')
 
         if clear:
             plt.cla()
@@ -585,7 +601,7 @@ class Tools:
         if show:
             plt.show()
         else:
-            plt.savefig(filename + ".png", dpi=400)
+            plt.savefig(filename + ".png", dpi=400, bbox_inches='tight')
 
         if clear:
             plt.cla()
