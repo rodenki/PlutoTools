@@ -52,26 +52,26 @@ frame, x_range, y_range = getArgs()
 data.loadData(frame)
 data.loadGridData()
 
-velocities = np.sqrt(data.variables["vx1"]**2 + data.variables["vx2"]**2) * data.unitVelocity
-escapeVel = np.sqrt(2.0*data.G * data.solarMass / (data.x1 * data.unitLength))
-escapeVel = np.tile(escapeVel, (velocities.shape[0], 1))
-
-escapeVel = velocities / escapeVel
-Tools.plotVariable(data, escapeVel, show=False, clear=False, log=False, interpolate=True, x_range=x_range,
-                   y_range=y_range, vlimits=(1, 1.5))
-Tools.plotVelocityFieldLines(data, show=True, filename="vel_fieldlines_50_temp", norm=True, x_range=x_range, y_range=y_range)
+# velocities = np.sqrt(data.variables["vx1"]**2 + data.variables["vx2"]**2) * data.unitVelocity
+# escapeVel = np.sqrt(2.0*data.G * data.solarMass / (data.x1 * data.unitLength))
+# escapeVel = np.tile(escapeVel, (velocities.shape[0], 1))
+#
+# escapeVel = velocities / escapeVel
+# Tools.plotVariable(data, escapeVel, show=False, clear=False, log=False, interpolate=True, x_range=x_range,
+#                    y_range=y_range, vlimits=(1, 1.5))
+# Tools.plotVelocityFieldLines(data, show=True, filename="vel_fieldlines_50_temp", norm=True, x_range=x_range, y_range=y_range)
 
 
 # Tools.plotCumulativeMassloss(frame)
 
-# temp = Tools.computeTemperature(data)
-# rho = data.variables["rho"] * data.unitNumberDensity
+#temp = Tools.computeTemperature(data)
+rho = data.variables["rho"] * data.unitNumberDensity
 # bx = data.variables["bx1"]
 # by = data.variables["bx2"]
 # bz = data.variables["bx3"]
 # b_tot = np.sqrt(bx**2 + by**2 + bz**2)
-# Tools.plotVariable(data, temp, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
-# Tools.plotVelocityFieldLines(data, show=False, filename="vel_fieldlines_50_temp", norm=True, x_range=x_range, y_range=y_range)
+Tools.plotVariable(data, rho, show=True, log=True, clear=False, interpolate=False, x_range=x_range, y_range=y_range)
+# Tools.plotMagneticFieldLines(data, show=True, filename="vel_fieldlines_50_temp", norm=True, x_range=x_range, y_range=y_range)
 # Tools.computeTotalMasses(path)
 
 # masses, times = Tools.computeTotalMasses("./")
