@@ -48,49 +48,19 @@ def getArgs():
 
 path = "./"
 
-avgRange = range(40, 135)
-
-rho = Tools.averageFrames(path, "rho", avgRange)
-prs = Tools.averageFrames(path, "prs", avgRange)
-vx1 = Tools.averageFrames(path, "vx1", avgRange)
-vx2 = Tools.averageFrames(path, "vx2", avgRange)
 
 data = sim.SimulationData()
 frame, x_range, y_range = getArgs()
 data.loadData(frame)
 data.loadGridData()
 
-# data.variables["rho"] = rho
-# data.variables["prs"] = prs
-# data.variables["vx1"] = vx1
-# data.variables["vx2"] = vx2
 
 
-# velocities = np.sqrt(data.variables["vx1"]**2 + data.variables["vx2"]**2) * data.unitVelocity
-# escapeVel = np.sqrt(2.0*data.G * data.solarMass / (data.x1 * data.unitLength))
-# soundspeed = np.sqrt(5.0/3.0 * data.variables["prs"] / data.variables["rho"]) * data.unitVelocity
-# escapeVel = np.tile(escapeVel, (soundspeed.shape[0], 1))
-#
-# escapeVel = soundspeed / escapeVel
-# Tools.plotVariable(data, escapeVel, show=False, clear=False, log=False, interpolate=True, x_range=x_range,
-#                     y_range=y_range, vlimits=(0.1, 1.5))
-# Tools.plotVelocityFieldLines(data, show=False, filename="vel_escape", norm=True, x_range=x_range, y_range=y_range)
-
-
-# Tools.plotCumulativeMassloss(frame)
-
-# temp = Tools.computeTemperature(data)
 rho = data.variables["rho"] * data.unitNumberDensity
-# bx = data.variables["bx1"]
-# by = data.variables["bx2"]
-# bz = data.variables["bx3"]
-# b_tot = np.sqrt(bx**2 + by**2 + bz**2)
-Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
-Tools.plotMagneticFieldLines(data, show=False, filename="mag_fieldlines_90z", norm=True, x_range=x_range, y_range=y_range)
-# Tools.computeTotalMasses(path)
+temp = Tools.computeTemperature(data)
+bx3 = np.sqrt(data.variables["bx1"]**2 + data.variables["bx2"]**2)
+mach = Tools.computeMachNumbers(data)
 
-# masses, times = Tools.computeTotalMasses("./")
-# Tools.plotMassLosses('./')
-# Tools.plotIonizationParameter(data, "ionization_param")
-# Tools.removeFilesWithStride("./", 20)
-# plotUsefulQuantities(data)
+Tools.plotVariable(data, rho, show=True, log=True, clear=False, interpolate=False, x_range=x_range, y_range=y_range)
+# Tools.plotMagneticFieldLines(data, show=True, filename="mag_fieldlines5", norm=True, x_range=x_range, y_range=y_range)
+# Tools.plotVelocityFieldLines(data, show=True, filename="mag_fieldlines5", norm=True, x_range=x_range, y_range=y_range)

@@ -378,7 +378,7 @@ class Tools:
         plt.colorbar()
         plt.xlabel('Radius [AU]')
         plt.ylabel('z [AU]')
-        orbits = data.orbits(5, data.time)
+        orbits = data.orbits(0.4, data.time)
         plt.title("t = " + str(data.time) + ", " + str(int(orbits)) + " orbits")
         if show:
             plt.show()
@@ -536,7 +536,7 @@ class Tools:
             bx2 /= n
 
         # plt.figure(figsize=(10, 7))
-        plt.streamplot(x, y, bx1, bx2, density=2, arrowstyle='->', linewidth=1,
+        plt.streamplot(x, y, bx1, bx2, density=3, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
 
         if show:
