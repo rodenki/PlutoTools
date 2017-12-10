@@ -28,37 +28,64 @@ def plotUsefulQuantities(data):
             # Tools.plotVariable(data, mach, "mach_" + frame, log=False)
             # Tools.plotIonizationParameter(data, "ionization_param_" + frame)
 
-def getArgs():
+def plotArguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("frame")
-    parser.add_argument("x_min")
-    parser.add_argument("x_max")
-    parser.add_argument("x_res")
-    parser.add_argument("y_min")
-    parser.add_argument("y_max")
-    parser.add_argument("y_res")
+    parser.add_argument('-f', '--frame', nargs=1)
+    parser.add_argument('--magfield', nargs=6)
+    parser.add_argument('--velfield', nargs=6)
+    parser.add_argument('--var', nargs=1)
+    parser.add_argument('-l', '--log')
+
     args = parser.parse_args()
-    frame = args.frame
+    frame = args.frame[0]
     for i in range(4-len(frame)):
         frame = "0" + frame
     frame = "data." + frame + ".dbl.h5"
-    return frame, [float(args.x_min), float(args.x_max), float(args.x_res)], [float(args.y_min), float(args.y_max), float(args.y_res)]
+    path = "./"
+    data = sim.SimulationData()
+    data.loadData(frame)
+    data.loadGridData()
+
+    if args.var:
+        try:
+            variable = data.variables[args.var[0]]
+            if args.log:
+                Tools.plotVariable(data, variable, show=True, log=True, clear=False, interpolate=False)
+            else:
+                Tools.plotVariable(data, variable, show=True, log=False, clear=False, interpolate=False)
+
+        except KeyError:
+            print("Variable not found in data")
+
+    if args.magfield:
+        rho = data.variables["rho"] * data.unitNumberDensity
+        x_range = [float(i) for i in args.magfield[:3]]
+        y_range = [float(i) for i in args.magfield[3:]]
+
+        Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
+        Tools.plotMagneticFieldLines(data, show=True, filename="mag_fieldlines", norm=True, x_range=x_range, y_range=y_range)
+
+    if args.velfield:
+        rho = data.variables["rho"] * data.unitNumberDensity
+        x_range = [float(i) for i in args.velfield[:3]]
+        y_range = [float(i) for i in args.velfield[3:]]
+
+        Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
+        Tools.plotVelocityFieldLines(data, show=True, filename="vel_fieldlines", norm=True, x_range=x_range, y_range=y_range)
 
 
 
-path = "./"
+plotArguments()
 
-avgRange = range(40, 135)
+# avgRange = range(40, 135)
+#
+# rho = Tools.averageFrames(path, "rho", avgRange)
+# prs = Tools.averageFrames(path, "prs", avgRange)
+# vx1 = Tools.averageFrames(path, "vx1", avgRange)
+# vx2 = Tools.averageFrames(path, "vx2", avgRange)
 
-rho = Tools.averageFrames(path, "rho", avgRange)
-prs = Tools.averageFrames(path, "prs", avgRange)
-vx1 = Tools.averageFrames(path, "vx1", avgRange)
-vx2 = Tools.averageFrames(path, "vx2", avgRange)
-
-data = sim.SimulationData()
-frame, x_range, y_range = getArgs()
-data.loadData(frame)
-data.loadGridData()
+# data = sim.SimulationData()
+# frame, x_range, y_range = getArgs()
 
 # data.variables["rho"] = rho
 # data.variables["prs"] = prs
@@ -80,14 +107,14 @@ data.loadGridData()
 # Tools.plotCumulativeMassloss(frame)
 
 # temp = Tools.computeTemperature(data)
-rho = data.variables["rho"] * data.unitNumberDensity
+# rho = data.variables["rho"] * data.unitNumberDensity
 # bx = data.variables["bx1"]
 # by = data.variables["bx2"]
 # bz = data.variables["bx3"]
 # b_tot = np.sqrt(bx**2 + by**2 + bz**2)
-Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
-Tools.plotMagneticFieldLines(data, show=False, filename="mag_fieldlines_90z", norm=True, x_range=x_range, y_range=y_range)
-# Tools.computeTotalMasses(path)
+# Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
+# Tools.plotMagneticFieldLines(data, show=False, filename="mag_fieldlines_90z", norm=True, x_range=x_range, y_range=y_range)
+# # Tools.computeTotalMasses(path)
 
 # masses, times = Tools.computeTotalMasses("./")
 # Tools.plotMassLosses('./')
