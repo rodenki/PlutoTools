@@ -342,9 +342,9 @@ class Tools:
     @staticmethod
     def plotVariable(data, variable, filename="data", log=True, show=True,
                      clear=True, interpolate=False, x_range=[0.33, 99, 100],
-                     y_range=[0.33, 99, 100], vlimits=(0, 1)):
+                     y_range=[0.33, 99, 100], vlimits=(0, 1), figsize=(10, 7)):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(10, 7))
+        plt.figure(figsize=figsize)
         plt.tight_layout()
 
         if interpolate:
@@ -358,7 +358,11 @@ class Tools:
         else:
             plt.pcolormesh(x, y, variable, cmap=cm.inferno) #, vmin=vlimits[0], vmax=vlimits[1])
 
-        plt.colorbar()
+        cb = plt.colorbar()
+        tick_locator = ticker.LogLocator(numdecs=10)
+        cb.locator = tick_locator
+        cb.update_ticks()
+
         plt.xlabel('Radius [AU]')
         plt.ylabel('z [AU]')
         orbits = data.orbits(0.4, data.time)
