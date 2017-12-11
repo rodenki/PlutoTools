@@ -187,44 +187,6 @@ class Tools:
         return data.variables["prs"] / data.variables["rho"] * kelvin * mu
 
     @staticmethod
-    def computeAbsoluteVelocities(data):
-        return np.sqrt(data.variables["vx1"]**2 + data.variables["vx2"]**2)
-
-    @staticmethod
-    def computeTemperatureToFile(path, replace=False):
-        sim = SimulationData()
-        sim.loadData(path)
-        kelvin = 1.072914e+05
-        mu = 1.37125
-        if replace:
-            sim.removeData("Temp")
-        temp = sim.variables["prs"] / sim.variables["rho"] * kelvin * mu
-        sim.insertData(temp, "Temp")
-
-    @staticmethod
-    def computeTemperaturesToFile(path, replace=False):
-        for file in os.listdir(path):
-            if file.endswith(".h5"):
-                print("Computing T for " + file)
-                Tools.computeTemperatureToFile(os.path.join(path, file), replace=replace)
-
-    @staticmethod
-    def computeVelocityToFile(path, replace=False):
-        sim = SimulationData()
-        sim.loadData(path)
-        if replace:
-            sim.removeData("VABS")
-        v = np.sqrt(sim.variables["vx1"]**2 + sim.variables["vx2"]**2)
-        sim.insertData(v, "VABS")
-
-    @staticmethod
-    def computeVelocitiesToFile(path, replace=False):
-        for file in os.listdir(path):
-            if file.endswith(".h5"):
-                print("Computing v for " + file)
-                Tools.computeVelocityToFile(os.path.join(path, file), replace=replace)
-
-    @staticmethod
     def computeTotalMass(path):
         data = SimulationData()
         data.loadData(path)
@@ -351,13 +313,6 @@ class Tools:
         return averaged
 
     @staticmethod
-    def polarCoordsToCartesian(x1, x2):
-        r_matrix, th_matrix = np.meshgrid(x1, x2)
-        x = r_matrix * np.sin(th_matrix)
-        y = r_matrix * np.cos(th_matrix)
-        return x, y
-
-    @staticmethod
     def plotVariable(data, variable, filename="data", log=True, show=True,
                      clear=True, interpolate=False, x_range=[0.33, 99, 100],
                      y_range=[0.33, 99, 100], vlimits=(0, 1)):
@@ -384,27 +339,6 @@ class Tools:
             plt.show()
         else:
             plt.savefig(filename + ".png", dpi=400, bbox_inches='tight')
-        if clear:
-            plt.cla()
-            plt.close()
-
-    @staticmethod
-    def plotDensity(data, filename="dens", show=False, clear=True,
-                    interpolate=False, resolution=1000):
-        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        plt.figure(figsize=(10, 7))
-        rho = data.variables["rho"]
-        if interpolate:
-            ranges = [np.min(x), np.max(y), resolution]
-            x, y, rho = Tools.interpolateToUniformGrid(data, rho, ranges, ranges)
-        plt.pcolormesh(x, y, rho, norm=LogNorm(vmin=np.nanmin(rho), vmax=np.nanmax(rho)), cmap=cm.inferno)
-        plt.colorbar()
-        plt.xlabel(r'r')
-        plt.ylabel(r'z')
-        if show:
-            plt.show()
-        else:
-            plt.savefig(filename + ".png", dpi=400)
         if clear:
             plt.cla()
             plt.close()
@@ -606,6 +540,13 @@ class Tools:
         if clear:
             plt.cla()
             plt.close()
+
+    @staticmethod
+    def polarCoordsToCartesian(x1, x2):
+        r_matrix, th_matrix = np.meshgrid(x1, x2)
+        x = r_matrix * np.sin(th_matrix)
+        y = r_matrix * np.cos(th_matrix)
+        return x, y
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
