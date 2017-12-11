@@ -34,6 +34,8 @@ def plotArguments():
     parser.add_argument('--magfield', nargs=6)
     parser.add_argument('--velfield', nargs=6)
     parser.add_argument('--var', nargs=1)
+    parser.add_argument('--mach', nargs='?')
+    parser.add_argument('--temp', nargs='?')
     parser.add_argument('-l', '--log')
 
     args = parser.parse_args()
@@ -68,8 +70,8 @@ def plotArguments():
         h = Tools.pressureScaleHeight(data)
 
         Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
-        Tools.plotMagneticFieldLines(data, show=False, clear=False, filename="mag_fieldlines", norm=True, x_range=x_range, y_range=y_range)
-        Tools.plotLineData(data, h, x_range=x_range)
+        Tools.plotMagneticFieldLines(data, show=True, clear=False, filename="mag_fieldlines", norm=True, x_range=x_range, y_range=y_range)
+        # Tools.plotLineData(data, h, x_range=x_range)
 
     if args.velfield:
         rho = data.variables["rho"] * data.unitNumberDensity
@@ -78,6 +80,14 @@ def plotArguments():
 
         Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
         Tools.plotVelocityFieldLines(data, show=True, filename="vel_fieldlines", norm=True, x_range=x_range, y_range=y_range)
+
+    if args.mach:
+        mach = Tools.computeMachNumbers(data)
+        Tools.plotVariable(data, mach, show=True, log=True, clear=False, interpolate=False)
+
+    if args.temp:
+        temp = Tools.computeTemperature(data)
+        Tools.plotVariable(data, temp, show=True, log=True, clear=False, interpolate=False)
 
 
 

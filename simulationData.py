@@ -165,6 +165,10 @@ class Tools:
                     os.remove(os.path.join(path, current_file))
 
     @staticmethod
+    def computeAbsoluteVelocities(data):
+        return np.sqrt(data.variables["vx1"]**2 + data.variables["vx2"]**2)
+
+    @staticmethod
     def computeMachNumbers(data):
         vabs = Tools.computeAbsoluteVelocities(data) * data.unitVelocity
         temp = Tools.computeTemperature(data)
@@ -349,9 +353,10 @@ class Tools:
         if log:
             plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable),
                                                         vmax=np.nanmax(variable)), cmap=cm.inferno)
+            # plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=100,
+            #                                             vmax=1e4), cmap=cm.inferno)
         else:
-            plt.pcolormesh(x, y, variable, cmap=cm.inferno, vmin=vlimits[0],
-                           vmax=vlimits[1])
+            plt.pcolormesh(x, y, variable, cmap=cm.inferno) #, vmin=vlimits[0], vmax=vlimits[1])
 
         plt.colorbar()
         plt.xlabel('Radius [AU]')
