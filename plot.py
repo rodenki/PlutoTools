@@ -37,14 +37,18 @@ def plotArguments():
     parser.add_argument('-l', '--log')
 
     args = parser.parse_args()
-    frame = args.frame[0]
-    for i in range(4-len(frame)):
-        frame = "0" + frame
-    frame = "data." + frame + ".dbl.h5"
+    frame = ''
     path = "./"
-    data = sim.SimulationData()
-    data.loadData(frame)
-    data.loadGridData()
+    data = None
+
+    if args.frame:
+        frame = args.frame[0]
+        for i in range(4-len(frame)):
+            frame = "0" + frame
+        frame = "data." + frame + ".dbl.h5"
+        data = sim.SimulationData()
+        data.loadData(frame)
+        data.loadGridData()
 
     if args.var:
         try:
