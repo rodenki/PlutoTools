@@ -97,6 +97,7 @@ class SimulationData:
         tree = xml.parse(xmlPath)
         root = tree.getroot()
         self.time = float(root[0][0][0].get("Value"))
+        self.loadGridData()
 
     def loadFrame(self, frame):
         self.loadData("data." + frame + ".dbl.h5")
@@ -311,6 +312,28 @@ class Tools:
         frames = np.array(frames)
         averaged = np.mean(frames, axis=0)
         return averaged
+
+    @staticmethod
+    def pressureScaleHeight(data):
+        temp = Tools.computeTemperature(data)
+        cs = np.sqrt(data.kb * temp / (data.mu * data.mp)) / data.unitVelocity
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        omega = np.sqrt(1.0 / x**3)
+        H = cs / omega
+        return H[-1]
+
+    @staticmethod
+    def plotLineData(data, lineData, show=True, filename="data", x_range=[0.33, 99, 100]):
+        newTicks = np.linspace(*x_range)
+        f = scipy.interpolate.interp1d(data.x1, lineData)
+        interpolated = f(newTicks)
+
+        plt.plot(newTicks, interpolated)
+
+        if show:
+            plt.show()
+        else:
+            plt.savefig(filename + ".png", dpi=400, bbox_inches='tight')
 
     @staticmethod
     def plotVariable(data, variable, filename="data", log=True, show=True,

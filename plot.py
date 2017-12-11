@@ -65,9 +65,11 @@ def plotArguments():
         rho = data.variables["rho"] * data.unitNumberDensity
         x_range = [float(i) for i in args.magfield[:3]]
         y_range = [float(i) for i in args.magfield[3:]]
+        h = Tools.pressureScaleHeight(data)
 
         Tools.plotVariable(data, rho, show=False, log=True, clear=False, interpolate=True, x_range=x_range, y_range=y_range)
-        Tools.plotMagneticFieldLines(data, show=True, filename="mag_fieldlines", norm=True, x_range=x_range, y_range=y_range)
+        Tools.plotMagneticFieldLines(data, show=False, clear=False, filename="mag_fieldlines", norm=True, x_range=x_range, y_range=y_range)
+        Tools.plotLineData(data, h, x_range=x_range)
 
     if args.velfield:
         rho = data.variables["rho"] * data.unitNumberDensity

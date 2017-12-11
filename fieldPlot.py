@@ -6,7 +6,5 @@ import os
 import argparse
 
 
-
-data = sim.SimulationData()
-masses, t = Tools.computeTotalMasses("./nofloor/")
-print(masses)
+masses = Tools.computeTotalMasses("./")
+print(masses[0])
