@@ -38,8 +38,10 @@ class SimulationData:
         self.cell_coordinates_x3 = np.array([])
         self.x1 = np.array([])
         self.x2 = np.array([])
+        self.x3 = np.array([])
         self.dx1 = np.array([])
         self.dx2 = np.array([])
+        self.dx3 = np.array([])
         self.variables = {}
         self.timestep = ""
         self.hdf5File = None
@@ -81,15 +83,24 @@ class SimulationData:
         self.variables["rho"] = np.array(self.hdf5File[self.timestep]['vars']['rho'])
         self.variables["prs"] = np.array(self.hdf5File[self.timestep]['vars']['prs'])
         self.variables["vx1"] = np.array(self.hdf5File[self.timestep]['vars']['vx1'])
-        self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx2'])
-        self.variables["vx3"] = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
+
+        try:
+            self.variables["vx2"] = np.array(self.hdf5File[self.timestep]['vars']['vx2'])
+        except KeyError:
+            print("No vx2 data")
+
+
+        try:
+            self.variables["vx3"] = np.array(self.hdf5File[self.timestep]['vars']['vx3'])
+        except KeyError:
+            print("No vx3 data")
+
         try:
             self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
             self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
             self.variables["bx3"] = np.array(self.hdf5File[self.timestep]['vars']['bx3'])
         except KeyError:
-            pass
-            # print("Magnetic field not present.")
+            print("Magnetic field not present.")
 
         self.hdf5File.close()
 
@@ -103,21 +114,39 @@ class SimulationData:
         self.loadData("data." + frame + ".dbl.h5")
 
     def loadGridData(self):
-        lines = [line.rstrip('\n') for line in open('grid.out')][9:]
-        n_coords = int(lines[0])
+        lines = [line.rstrip('\n') for line in open('grid.out')]
+        for i, line in enumerate(lines):
+            if line[0] != '#':
+                lines = lines[i:]
+                break
+
+        n1_coords = int(lines[0])
         lines = lines[1:]
-        x1_lines = lines[:n_coords]
-        x2_lines = lines[n_coords+1:-2]
+        x1_lines = lines[:n1_coords]
+        n2_coords = int(lines[n1_coords])
+        lines = lines[n1_coords+1:]
+        x2_lines = lines[:n2_coords]
+        n3_coords = int(lines[n2_coords])
+        lines = lines[n2_coords+1:]
+        x3_lines = lines
+
         x1_coords = []
         x2_coords = []
+        x3_coords = []
         [x1_coords.append(line.split('   ')) for line in x1_lines]
         [x2_coords.append(line.split('   ')) for line in x2_lines]
+        [x3_coords.append(line.split('   ')) for line in x3_lines]
+
         x1_coords = np.asarray(x1_coords, dtype=np.float)
         x2_coords = np.asarray(x2_coords, dtype=np.float)
+        x3_coords = np.asarray(x3_coords, dtype=np.float)
+
         self.x1 = np.array([0.5*(x1_coords[i][1] + x1_coords[i][2]) for i in range(len(x1_coords))])
         self.x2 = np.array([0.5*(x2_coords[i][1] + x2_coords[i][2]) for i in range(len(x2_coords))])
+        self.x3 = np.array([0.5*(x3_coords[i][1] + x3_coords[i][2]) for i in range(len(x3_coords))])
         self.dx1 = np.array([x1_coords[i][2] - x1_coords[i][1] for i in range(len(x1_coords))])
         self.dx2 = np.array([x2_coords[i][2] - x2_coords[i][1] for i in range(len(x2_coords))])
+        self.dx3 = np.array([x3_coords[i][2] - x3_coords[i][1] for i in range(len(x3_coords))])
 
     def insertData(self, data, title):
         self.hdf5File = h5py.File(self.filename, 'a')
