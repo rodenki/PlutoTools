@@ -4,8 +4,9 @@ import os
 import h5py
 import numpy as np
 import scipy
-from scipy.ndimage.interpolation import map_coordinates
 from scipy import stats
+from scipy import interpolate
+from scipy.ndimage import map_coordinates
 import xml.etree.cElementTree as xml
 from copy import deepcopy
 import matplotlib.pyplot as plt
@@ -244,6 +245,49 @@ class Tools:
                 masses.append(mass)
                 print("Mass for " + file + ": " + str(mass))
         return masses, times
+
+    # Returns single interpolated value on a regular grid (faster than griddata)
+    @staticmethod
+    def singlePointInterpolation(t, p, vx1, vx2, x_range, y_range):
+        pp = [[(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])],
+                      [(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])]]
+        pp = np.array(pp)
+        return [map_coordinates(vx1, pp, order=1), map_coordinates(vx2, pp, order=1)]
+
+    @staticmethod
+    def computeStreamlines(data):
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        # x = np.ravel(x)
+        # y = np.ravel(y)
+        # points = np.column_stack((x, y))
+
+        Tools.transformVelocityFieldToCylindrical(data)
+        x_range = [3, 100, 1000]
+        y_range = [0, 100, 1000]
+
+        vx1 = data.variables["vx1"]
+        vx2 = data.variables["vx2"]
+
+        x, y, vx1 = Tools.interpolateToUniformGrid(data, vx1, x_range, y_range)
+        x, y, vx2 = Tools.interpolateToUniformGrid(data, vx2, x_range, y_range)
+        p0 = np.array([10, 10])
+
+        print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
+        # vx, vy = np.ravel(data.variables["vx1"]), np.ravel(data.variables["vx2"])
+
+        p0 = (50, 50)
+        t0 = 0.0
+        t1 = 100
+        solver = scipy.integrate.ode(Tools.singlePointInterpolation)
+        solver.set_integrator("vode", rtol=1e-8)
+        solver.set_f_params(vx1, vx2, x_range, y_range)
+        solver.set_initial_value(p0, t0)
+        sol = []
+
+        while solver.t < t1:
+            solver.integrate(t1, step=True)
+            print(solver.t, solver.y)
+            sol.append([solver.t, solver.y])
 
 
     @staticmethod
@@ -518,7 +562,7 @@ class Tools:
 
         Tools.transformMagneticFieldToCylindrical(data)
         # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
-        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        # x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         bx1 = data.variables["bx1"]
         bx2 = data.variables["bx2"]
 
@@ -550,7 +594,7 @@ class Tools:
 
         Tools.transformVelocityFieldToCylindrical(data)
         # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
-        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        # x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         vx1 = data.variables["vx1"]
         vx2 = data.variables["vx2"]
 
