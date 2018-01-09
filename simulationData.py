@@ -249,45 +249,45 @@ class Tools:
     # Returns single interpolated value on a regular grid (faster than griddata)
     @staticmethod
     def singlePointInterpolation(t, p, vx1, vx2, x_range, y_range):
-        pp = [[(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])],
-                      [(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])]]
+        pp = [[(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])],
+                      [(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])]]
         pp = np.array(pp)
         return [map_coordinates(vx1, pp, order=1), map_coordinates(vx2, pp, order=1)]
 
     @staticmethod
     def computeStreamlines(data):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-        # x = np.ravel(x)
-        # y = np.ravel(y)
-        # points = np.column_stack((x, y))
 
         Tools.transformVelocityFieldToCylindrical(data)
-        x_range = [3, 100, 1000]
+        x_range = [1, 100, 1000]
         y_range = [0, 100, 1000]
+        x, y, vx1 = Tools.interpolateToUniformGrid(data, data.variables["vx1"], x_range, y_range)
+        x, y, vx2 = Tools.interpolateToUniformGrid(data, data.variables["vx2"], x_range, y_range)
+        vx1 = -vx1
+        vx2 = -vx2
 
-        vx1 = data.variables["vx1"]
-        vx2 = data.variables["vx2"]
-
-        x, y, vx1 = Tools.interpolateToUniformGrid(data, vx1, x_range, y_range)
-        x, y, vx2 = Tools.interpolateToUniformGrid(data, vx2, x_range, y_range)
-        p0 = np.array([10, 10])
-
-        print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
+        # print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
         # vx, vy = np.ravel(data.variables["vx1"]), np.ravel(data.variables["vx2"])
 
-        p0 = (50, 50)
+        p0 = (60, 70)
         t0 = 0.0
-        t1 = 100
+        t1 = 1000
+        # print(Tools.singlePointInterpolation(t0, p0, vx1, vx2, x_range, y_range))
         solver = scipy.integrate.ode(Tools.singlePointInterpolation)
-        solver.set_integrator("vode", rtol=1e-8)
+        solver.set_integrator("vode", rtol=1e-10)
         solver.set_f_params(vx1, vx2, x_range, y_range)
         solver.set_initial_value(p0, t0)
-        sol = []
+        x, y = [], []
 
-        while solver.t < t1:
+        # mimics the wind launching front
+        H = 4.8 * Tools.pressureScaleHeightFlat(data)
+        xticks = data.x1
+
+        while solver.y[1] > Tools.interpolatePoint(xticks, H, solver.y[0]):
             solver.integrate(t1, step=True)
-            print(solver.t, solver.y)
-            sol.append([solver.t, solver.y])
+            x.append(solver.y[0])
+            y.append(solver.y[1])
+            print(solver.y)
 
 
     @staticmethod
@@ -333,48 +333,6 @@ class Tools:
         plt.savefig(filename)
 
     @staticmethod
-    def computeCumulativeMassLoss(path):
-        sim = SimulationData()
-        sim.loadData(path)
-        sim.loadGridData()
-
-        losses = []
-        cumulative_loss = 0.0
-
-        for r in range(len(sim.dx1)):
-            computeLimit = r
-            temp = Tools.computeTemperature(sim)[:,computeLimit]
-            tempRange = [i for i,v in enumerate(temp) if v > 1000]
-            tempRange = range(min(tempRange), max(tempRange))
-            rho = sim.variables["rho"][:,computeLimit] * sim.unitDensity
-            vx1 = sim.variables["vx1"][:,computeLimit] * sim.unitVelocity
-
-            surface = 0.5*np.pi / len(sim.x2) * sim.x1[computeLimit]**2 * 2.0 * np.pi * sim.unitLength**2
-            massLoss = rho[tempRange] * surface * vx1[tempRange]
-            totalMassLoss = np.add.reduce(massLoss)
-            totalMassLoss *= sim.year / sim.solarMass
-            if totalMassLoss < 0.0:
-                totalMassLoss = 0.0
-            cumulative_loss += totalMassLoss
-            losses.append(cumulative_loss)
-        return losses, sim
-
-    @staticmethod
-    def plotCumulativeMassloss(path, filename="cumulative_losses.eps"):
-        losses, sim = Tools.computeCumulativeMassLoss(path)
-        losses = np.array(losses, dtype=np.double)
-
-        plt.figure(figsize=(10, 8))
-        plt.rc('text', usetex=True)
-        plt.rc('font', family='serif')
-        plt.semilogy(sim.x1, losses)
-        plt.xlabel(r'r [AU]')
-        plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
-        plt.savefig(filename)
-        plt.cla()
-        plt.close()
-
-    @staticmethod
     def averageFrames(path, variable, frameRange):
         frames = []
         sim = SimulationData()
@@ -400,12 +358,26 @@ class Tools:
         return H[-1]
 
     @staticmethod
+    def pressureScaleHeightFlat(data):
+        temp = Tools.computeTemperature(data)
+        cs = np.sqrt(data.kb * temp / (data.mu * data.mp)) / data.unitVelocity
+        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        omega = np.sqrt(1.0 / x**3)
+        H = cs / omega
+        return np.power(H[-1], 4.5/5.0)
+
+    @staticmethod
+    def interpolatePoint(ticks, data, point):
+        f = scipy.interpolate.interp1d(ticks, data)
+        return f(point)
+
+    @staticmethod
     def plotLineData(data, lineData, show=True, filename="data", x_range=[0.33, 99, 100]):
         newTicks = np.linspace(*x_range)
         f = scipy.interpolate.interp1d(data.x1, lineData)
         interpolated = f(newTicks)
 
-        plt.plot(newTicks, interpolated)
+        plt.plot(newTicks, interpolated, 'g')
 
         if show:
             plt.show()
@@ -464,14 +436,16 @@ class Tools:
 
     @staticmethod
     def plotVelocityField(data, filename="vel_field", dx1=10, dx2=5, scale=40,
-                          width=0.001, x1_start=0, wind_only=True, clear=True,
+                          width=0.001, x1_start=0, wind_only=False, clear=True,
                           show=False, norm=True):
         Tools.transformVelocityFieldToCylindrical(data)
         Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
 
-        vx1 = data.variables["vx1"]
-        vx2 = data.variables["vx2"]
+        # vx1 = data.variables["vx1"]
+        # vx2 = data.variables["vx2"]
+        # x = data.x1
+        # y = data.x2
 
         if norm:
             n = np.sqrt(vx1**2 + vx2**2)
