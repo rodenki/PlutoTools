@@ -1,17 +1,15 @@
-import sys
 import os
 
 import h5py
 import numpy as np
 import scipy
 from scipy import stats
-from scipy import interpolate
 from scipy.ndimage import map_coordinates
 import xml.etree.cElementTree as xml
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from matplotlib import rc
-from matplotlib import colors, ticker, cm
+from matplotlib import ticker, cm
 from matplotlib.colors import LogNorm
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
@@ -255,7 +253,47 @@ class Tools:
         return [map_coordinates(vx1, pp, order=1), map_coordinates(vx2, pp, order=1)]
 
     @staticmethod
-    def computeStreamlines(data):
+    def computeStreamline(data, point, x, y, vx1, vx2, x_range, y_range):
+        # print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
+        # vx, vy = np.ravel(data.variables["vx1"]), np.ravel(data.variables["vx2"])
+
+        p0 = point
+        t0 = 0.0
+        t1 = 1000
+        # print(Tools.singlePointInterpolation(t0, p0, vx1, vx2, x_range, y_range))
+        solver = scipy.integrate.ode(Tools.singlePointInterpolation)
+        solver.set_integrator("vode", rtol=1e-10)
+        solver.set_f_params(vx1, vx2, x_range, y_range)
+        solver.set_initial_value(p0, t0)
+        # x, y = [], []
+
+        # mimics the wind launching front
+        H = 4.8 * Tools.pressureScaleHeightFlat(data)
+        xticks = data.x1
+
+        while solver.y[1] > Tools.interpolatePoint(xticks, H, solver.y[0]):
+            solver.integrate(t1, step=True)
+            # x.append(solver.y[0])
+            # y.append(solver.y[1])
+        print(solver.y)
+        return solver.y[0]
+
+    @staticmethod
+    def computeRadialMassLosses(data):
+        computeLimit = int(len(data.dx1) * 0.99)
+        rho = data.variables["rho"][:,computeLimit] * data.unitDensity
+        vx1 = data.variables["vx1"][:,computeLimit] * data.unitVelocity
+        temp = Tools.computeTemperature(data)[:,computeLimit]
+        tempRange = [i for i,v in enumerate(temp) if v > 1000 and vx1[i] > 0]
+        tempRange = range(min(tempRange), max(tempRange))
+        r = data.x1[computeLimit]
+        theta = data.x2[tempRange]
+
+        surface = 0.5*np.pi / len(data.x2) * r**2 * 2.0 * np.pi * data.unitLength**2
+        losses = surface * rho[tempRange] * vx1[tempRange] * data.year / data.solarMass
+        x_start = r * np.sin(theta)
+        y_start = r * np.cos(theta)
+
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
 
         Tools.transformVelocityFieldToCylindrical(data)
@@ -266,29 +304,16 @@ class Tools:
         vx1 = -vx1
         vx2 = -vx2
 
-        # print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
-        # vx, vy = np.ravel(data.variables["vx1"]), np.ravel(data.variables["vx2"])
+        losses = losses[19:]
+        x_start = x_start[19:]
+        y_start = y_start[19:]
 
-        p0 = (60, 70)
-        t0 = 0.0
-        t1 = 1000
-        # print(Tools.singlePointInterpolation(t0, p0, vx1, vx2, x_range, y_range))
-        solver = scipy.integrate.ode(Tools.singlePointInterpolation)
-        solver.set_integrator("vode", rtol=1e-10)
-        solver.set_f_params(vx1, vx2, x_range, y_range)
-        solver.set_initial_value(p0, t0)
-        x, y = [], []
+        radii = []
 
-        # mimics the wind launching front
-        H = 4.8 * Tools.pressureScaleHeightFlat(data)
-        xticks = data.x1
+        for i, j in zip(x_start, y_start):
+            radii.append(Tools.computeStreamline(data, (i, j), x, y, vx1, vx2, x_range, y_range))
 
-        while solver.y[1] > Tools.interpolatePoint(xticks, H, solver.y[0]):
-            solver.integrate(t1, step=True)
-            x.append(solver.y[0])
-            y.append(solver.y[1])
-            print(solver.y)
-
+        return radii, losses
 
     @staticmethod
     def computeMassLoss(path):
