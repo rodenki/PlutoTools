@@ -242,7 +242,7 @@ class Tools:
                 times.append(float(sim.time) * sim.unitTimeYears)
                 masses.append(mass)
                 print("Mass for " + file + ": " + str(mass))
-        return masses, times
+        return np.array(masses), np.array(times)
 
     # Returns single interpolated value on a regular grid (faster than griddata)
     @staticmethod
@@ -415,7 +415,7 @@ class Tools:
                      y_range=[0.33, 99, 100], vlimits=(0, 1), figsize=(10, 7)):
         x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
         plt.figure(figsize=figsize)
-        plt.tight_layout()
+        # plt.tight_layout()
 
         if interpolate:
             x, y, variable = Tools.interpolateToUniformGrid(data, variable, x_range, y_range)
@@ -435,7 +435,7 @@ class Tools:
 
         plt.xlabel('Radius [AU]')
         plt.ylabel('z [AU]')
-        orbits = data.orbits(0.4, data.time)
+        orbits = data.orbits(1.0, data.time)
         plt.title("t = " + str(data.time) + ", " + str(int(orbits)) + " orbits")
         if show:
             plt.show()
@@ -674,4 +674,6 @@ class Tools:
         points = np.column_stack((x, y))
         grid_x, grid_y = np.meshgrid(np.linspace(*x_range), np.linspace(*y_range))
         newVariable = scipy.interpolate.griddata(points, variable, (grid_x, grid_y))
+        grid_r = np.sqrt(grid_x**2 + grid_y**2)
+        newVariable[grid_r < 1.0] = np.nan
         return grid_x, grid_y, newVariable
