@@ -25,7 +25,7 @@ class SimulationData:
         self.unitVelocity = 2.987e+06
         self.unitLength = 1.496e+13
         self.unitTimeYears = 1.588e-01
-        self.solarMass = 2e33
+        self.solarMass = 1.989e33
         self.year = 31536000
         self.mu = 1.37125
         self.kb = 1.3806505e-16
@@ -99,7 +99,8 @@ class SimulationData:
             self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
             self.variables["bx3"] = np.array(self.hdf5File[self.timestep]['vars']['bx3'])
         except KeyError:
-            print("Magnetic field not present.")
+            #print("Magnetic field not present.")
+            pass
 
         self.hdf5File.close()
 
@@ -253,7 +254,7 @@ class Tools:
         return [map_coordinates(vx1, pp, order=1), map_coordinates(vx2, pp, order=1)]
 
     @staticmethod
-    def computeStreamline(data, point, x, y, vx1, vx2, x_range, y_range):
+    def computeStreamline(data, point, x, y, vx1, vx2, vx3, rho, prs, x_range, y_range):
         # print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
         # vx, vy = np.ravel(data.variables["vx1"]), np.ravel(data.variables["vx2"])
 
@@ -265,17 +266,22 @@ class Tools:
         solver.set_integrator("vode", rtol=1e-10)
         solver.set_f_params(vx1, vx2, x_range, y_range)
         solver.set_initial_value(p0, t0)
-        # x, y = [], []
-
+        
         # mimics the wind launching front
         H = 4.8 * Tools.pressureScaleHeightFlat(data)
         xticks = data.x1
 
+        x, y = [], []
+
         while solver.y[1] > Tools.interpolatePoint(xticks, H, solver.y[0]):
             solver.integrate(t1, step=True)
-            # x.append(solver.y[0])
-            # y.append(solver.y[1])
+            x.append(solver.y[0])
+            y.append(solver.y[1])
         print(solver.y)
+        print("Computing Jacobi potential...")
+        potential = Tools.computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range)
+
+        print(potential)
         return solver.y[0]
 
     @staticmethod
@@ -290,7 +296,7 @@ class Tools:
         theta = data.x2[tempRange]
 
         surface = 0.5*np.pi / len(data.x2) * r**2 * 2.0 * np.pi * data.unitLength**2
-        losses = surface * rho[tempRange] * vx1[tempRange] * data.year / data.solarMass
+        losses = 2 * surface * rho[tempRange] * vx1[tempRange] * data.year / data.solarMass
         x_start = r * np.sin(theta)
         y_start = r * np.cos(theta)
 
@@ -301,6 +307,11 @@ class Tools:
         y_range = [0, 100, 1000]
         x, y, vx1 = Tools.interpolateToUniformGrid(data, data.variables["vx1"], x_range, y_range)
         x, y, vx2 = Tools.interpolateToUniformGrid(data, data.variables["vx2"], x_range, y_range)
+        x, y, vx3 = Tools.interpolateToUniformGrid(data, data.variables["vx3"], x_range, y_range)
+        x, y, rho = Tools.interpolateToUniformGrid(data, data.variables["rho"], x_range, y_range)
+        x, y, prs = Tools.interpolateToUniformGrid(data, data.variables["prs"], x_range, y_range)
+
+
         vx1 = -vx1
         vx2 = -vx2
 
@@ -311,9 +322,28 @@ class Tools:
         radii = []
 
         for i, j in zip(x_start, y_start):
-            radii.append(Tools.computeStreamline(data, (i, j), x, y, vx1, vx2, x_range, y_range))
+            radii.append(Tools.computeStreamline(data, (i, j), x, y, vx1, vx2, vx3, rho, prs, x_range, y_range))
 
         return radii, losses
+
+    @staticmethod
+    def jacobiPotential(rho, prs, vx3, r):
+        return prs / rho + 1 / r - 0.5 * r**4 * vx3**2 
+
+    @staticmethod
+    def computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range):
+        xticks = np.linspace(x_range[0], x_range[1], x_range[2])
+        yticks = np.linspace(y_range[0], y_range[1], y_range[2])
+        potential = []
+
+        for xx, yy in zip(x, y):
+            rho = Tools.interpolatePoint2D(xticks, yticks, rho, (xx, yy))
+            prs = Tools.interpolatePoint2D(xticks, yticks, rho, (xx, yy))
+            vx3 = Tools.interpolatePoint2D(xticks, yticks, rho, (xx, yy))
+            r = np.linalg.norm((xx, yy))
+            potential.append(Tools.jacobiPotential(rho, prs, vx3, r))
+        return potential
+
 
     @staticmethod
     def computeMassLoss(path):
@@ -361,13 +391,14 @@ class Tools:
     def averageFrames(path, variable, frameRange):
         frames = []
         sim = SimulationData()
+        sim.loadGridData()
 
         for filename in os.listdir(path):
             if filename.endswith(".h5"):
                 frameIndex = int(filename.split('.')[1])
                 if frameIndex in frameRange:
+                    print("Averaging " + str(variable) + " frame: " + str(frameIndex))
                     sim.loadData(os.path.join(path, filename))
-                    sim.loadGridData()
                     frames.append(sim.variables[variable])
         frames = np.array(frames)
         averaged = np.mean(frames, axis=0)
@@ -390,11 +421,6 @@ class Tools:
         omega = np.sqrt(1.0 / x**3)
         H = cs / omega
         return np.power(H[-1], 4.5/5.0)
-
-    @staticmethod
-    def interpolatePoint(ticks, data, point):
-        f = scipy.interpolate.interp1d(ticks, data)
-        return f(point)
 
     @staticmethod
     def plotLineData(data, lineData, show=True, filename="data", x_range=[0.33, 99, 100]):
@@ -651,6 +677,15 @@ class Tools:
         x = r_matrix * np.sin(th_matrix)
         y = r_matrix * np.cos(th_matrix)
         return x, y
+
+    @staticmethod
+    def interpolatePoint(ticks, data, point):
+        f = scipy.interpolate.interp1d(ticks, data)
+        return f(point)
+
+    @staticmethod
+    def interpolatePoint2D(xticks, yticks, data, point):
+        pass
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
