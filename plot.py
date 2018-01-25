@@ -34,6 +34,7 @@ def plotArguments():
     parser.add_argument('--magfield', nargs=6)
     parser.add_argument('--velfield', nargs=6)
     parser.add_argument('--var', nargs=1)
+    parser.add_argument('--file', nargs=1)
     parser.add_argument('--mach', nargs='?')
     parser.add_argument('--temp', nargs='?')
     parser.add_argument('-l', '--log')
@@ -47,18 +48,26 @@ def plotArguments():
         frame = args.frame[0]
         for i in range(4-len(frame)):
             frame = "0" + frame
-        frame = "data." + frame + ".dbl.h5"
+        frameString = "data." + frame + ".dbl.h5"
         data = sim.SimulationData()
-        data.loadData(frame)
+        data.loadData(frameString)
         data.loadGridData()
 
     if args.var:
         try:
             variable = data.variables[args.var[0]]
-            if args.log:
-                Tools.plotVariable(data, variable, show=True, log=True, clear=False, interpolate=False)
+            if args.file:
+                if args.log:
+                    Tools.plotVariable(data, variable, show=False, log=True, filename=(args.file[0] + frame),
+                                       clear=False, interpolate=False, figsize=(7, 10))
+                else:
+                    Tools.plotVariable(data, variable, show=False, log=False, filename=(args.file[0] + frame),
+                                       clear=False, interpolate=False, figsize=(7, 10))
             else:
-                Tools.plotVariable(data, variable, show=True, log=False, clear=False, interpolate=False)
+                if args.log:
+                    Tools.plotVariable(data, variable, log=True, clear=False, interpolate=False, figsize=(7, 10))
+                else:
+                    Tools.plotVariable(data, variable, log=False, clear=False, interpolate=False, figsize=(7, 10))
 
         except KeyError:
             print("Variable not found in data")
