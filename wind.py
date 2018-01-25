@@ -13,14 +13,18 @@ def computeStreamlines():
 	data.variables["prs"] = np.load("avg_prs.npy")
 	data.variables["vx1"] = np.load("avg_vx1.npy")
 	data.variables["vx2"] = np.load("avg_vx2.npy")
-	radii, losses = Tools.computeRadialMassLosses(data)
+	data.variables["vx3"] = np.load("avg_vx3.npy")
+	radii, losses, potentials = Tools.computeRadialMassLosses(data)
 
-	# np.save("radii.npy", radii)
-	# np.save("losses.npy", losses)
+	np.save("radii.npy", radii)
+	np.save("losses.npy", losses)
+	np.save("jacobi.npy", potentials)
 
+def plotJacobiePotential():
+	jacobi = np.load("jacobi.npy")
+	print(jacobi)
 
-computeStreamlines()
-
+plotJacobiePotential()
 
 def computeLosses():
 	data = SimulationData()
@@ -75,5 +79,3 @@ def computeLosses():
 	plt.xlabel("r (AU)")
 	plt.ylabel("$ \dot{M}_w  [M_{\odot} / yr] $(Cumulative)")
 	plt.savefig("cumulativeLoss.eps")
-
-

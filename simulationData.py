@@ -266,7 +266,7 @@ class Tools:
         solver.set_integrator("vode", rtol=1e-10)
         solver.set_f_params(vx1, vx2, x_range, y_range)
         solver.set_initial_value(p0, t0)
-        
+
         # mimics the wind launching front
         H = 4.8 * Tools.pressureScaleHeightFlat(data)
         xticks = data.x1
@@ -277,12 +277,12 @@ class Tools:
             solver.integrate(t1, step=True)
             x.append(solver.y[0])
             y.append(solver.y[1])
+            # print(solver.y)
         print(solver.y)
         print("Computing Jacobi potential...")
         potential = Tools.computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range)
-
-        print(potential)
-        return solver.y[0]
+        print("Computed Jacobi potential")
+        return solver.y[0], potential
 
     @staticmethod
     def computeRadialMassLosses(data):
@@ -315,33 +315,36 @@ class Tools:
         vx1 = -vx1
         vx2 = -vx2
 
-        losses = losses[19:]
-        x_start = x_start[19:]
-        y_start = y_start[19:]
+        losses = losses[20:]
+        x_start = x_start[20:]
+        y_start = y_start[20:]
 
         radii = []
+        potentials = []
 
         for i, j in zip(x_start, y_start):
-            radii.append(Tools.computeStreamline(data, (i, j), x, y, vx1, vx2, vx3, rho, prs, x_range, y_range))
+            radius, potential = Tools.computeStreamline(data, (i, j), x, y, vx1, vx2, vx3, rho, prs, x_range, y_range)
+            radii.append(radius)
+            potentials.append(potential)
 
-        return radii, losses
+        return radii, losses, potentials
 
     @staticmethod
     def jacobiPotential(rho, prs, vx3, r):
-        return prs / rho + 1 / r - 0.5 * r**4 * vx3**2 
+        return prs / rho + 1 / r - 0.5 * r**4 * vx3**2
 
     @staticmethod
     def computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range):
-        xticks = np.linspace(x_range[0], x_range[1], x_range[2])
-        yticks = np.linspace(y_range[0], y_range[1], y_range[2])
+        # xticks = np.linspace(x_range[0], x_range[1], x_range[2])
+        # yticks = np.linspace(y_range[0], y_range[1], y_range[2])
         potential = []
 
         for xx, yy in zip(x, y):
-            rho = Tools.interpolatePoint2D(xticks, yticks, rho, (xx, yy))
-            prs = Tools.interpolatePoint2D(xticks, yticks, rho, (xx, yy))
-            vx3 = Tools.interpolatePoint2D(xticks, yticks, rho, (xx, yy))
+            rho_i = Tools.interpolatePoint2D(x_range, y_range, rho, (xx, yy))
+            prs_i = Tools.interpolatePoint2D(x_range, y_range, prs, (xx, yy))
+            vx3_i = Tools.interpolatePoint2D(x_range, y_range, vx3, (xx, yy))
             r = np.linalg.norm((xx, yy))
-            potential.append(Tools.jacobiPotential(rho, prs, vx3, r))
+            potential.append(Tools.jacobiPotential(rho_i, prs_i, vx3_i, r)[0])
         return potential
 
 
@@ -684,8 +687,11 @@ class Tools:
         return f(point)
 
     @staticmethod
-    def interpolatePoint2D(xticks, yticks, data, point):
-        pass
+    def interpolatePoint2D(x_range, y_range, data, p):
+        pp = [[(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])],
+                      [(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])]]
+        pp = np.array(pp)
+        return map_coordinates(data, pp, order=1)
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
