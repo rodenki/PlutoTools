@@ -14,14 +14,17 @@ np.set_printoptions(threshold=500)
 from . import Data
 
 
-class Plotters:
+class Plotter:
 
     def __init__(self, data):
         self.data = data
+        self.resetValues()
+
+    def resetValues(self):
         self.xrange = [0, 99, 500]
         self.yrange = [0, 99, 500]
         self.vlimits = []
-        self.figsize = (10, 7)
+        self.figsize = (9, 6)
         self.filename = "data"
         self.log = True
         self.show = True
@@ -44,7 +47,6 @@ class Plotters:
     def plotVariable(self, variable):
         x, y = Tools.polarCoordsToCartesian(self.data.x1, self.data.x2)
         plt.figure(figsize=self.figsize)
-        # plt.tight_layout()
 
         if self.interpolate:
             x, y, variable = Tools.interpolateToUniformGrid(self.data, variable, self.xrange, self.yrange)
@@ -70,6 +72,40 @@ class Plotters:
             plt.show()
         else:
             plt.savefig(self.filename + ".png", dpi=400, bbox_inches='tight')
+        if self.clear:
+            plt.cla()
+            plt.close()
+
+    def plotVelocityFieldLines(self):
+
+        self.interpolate = True
+        self.clear = False
+        self.show = False
+
+        self.plotVariable(self.data.variables["rho"])
+
+        self.show = True
+
+        vx1, vx2 = Tools.transformVelocityFieldToCylindrical(self.data)
+        # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
+        # x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+
+        x, y, vx1 = Tools.interpolateToUniformGrid(self.data, vx1, self.xrange, self.yrange)
+        x, y, vx2 = Tools.interpolateToUniformGrid(self.data, vx2, self.xrange, self.yrange)
+
+        n = np.sqrt(vx1**2 + vx2**2)
+        vx1 /= n
+        vx2 /= n
+
+        # plt.figure(figsize=self.figsize)
+        plt.streamplot(x, y, vx1, vx2, density=3, arrowstyle='->', linewidth=1,
+                       arrowsize=1.5)
+
+        if self.show:
+            plt.show()
+        else:
+            plt.savefig(self.filename + ".png", dpi=400, bbox_inches='tight')
+
         if self.clear:
             plt.cla()
             plt.close()
@@ -432,8 +468,9 @@ class Tools:
         vx2 = data.variables["vx2"]
         x2 = np.transpose(np.tile(data.x2, (len(data.x1), 1)))
 
-        data.variables["vx1"] = vx1 * np.sin(x2) + vx2 * np.cos(x2)
-        data.variables["vx2"] = vx1 * np.cos(x2) - vx2 * np.sin(x2)
+        vx1 = vx1 * np.sin(x2) + vx2 * np.cos(x2)
+        vx2 = vx1 * np.cos(x2) - vx2 * np.sin(x2)
+        return vx1, vx2
 
     @staticmethod
     def transformMagneticFieldToCylindrical(data):
