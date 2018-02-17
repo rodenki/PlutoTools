@@ -27,8 +27,6 @@ class Plotter:
         self.figsize = (9, 6)
         self.filename = "data"
         self.log = True
-        self.show = True
-        self.clear = True
         self.interpolate = False
         self.orbitalDistance = 1.0
 
@@ -43,6 +41,19 @@ class Plotter:
 
     def setFigsize(self, width, height):
         self.figsize = (width, height)
+
+    def show(self):
+        plt.show()
+
+    def savefig(self, filename=None):
+        if filename == None:
+            plt.savefig(self.filename + ".png")
+        else:
+            plt.savefig(filename)            
+
+    def clear(self):
+        plt.cla()
+        plt.close()
 
     def plotVariable(self, variable):
         x, y = Tools.polarCoordsToCartesian(self.data.x1, self.data.x2)
@@ -68,28 +79,14 @@ class Plotter:
         plt.ylabel('z [AU]')
         orbits = self.data.orbits(self.orbitalDistance, self.data.time)
         plt.title("t = " + str(self.data.time) + ", " + str(int(orbits)) + " orbits")
-        if self.show:
-            plt.show()
-        else:
-            plt.savefig(self.filename + ".png", dpi=400, bbox_inches='tight')
-        if self.clear:
-            plt.cla()
-            plt.close()
 
     def plotVelocityFieldLines(self):
 
         self.interpolate = True
-        self.clear = False
-        self.show = False
 
         self.plotVariable(self.data.variables["rho"])
 
-        self.show = True
-
         vx1, vx2 = Tools.transformVelocityFieldToCylindrical(self.data)
-        # Tools.interpolateRadialGrid(data, np.linspace(0.4, 98.5, 500))
-        # x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
-
         x, y, vx1 = Tools.interpolateToUniformGrid(self.data, vx1, self.xrange, self.yrange)
         x, y, vx2 = Tools.interpolateToUniformGrid(self.data, vx2, self.xrange, self.yrange)
 
@@ -97,18 +94,8 @@ class Plotter:
         vx1 /= n
         vx2 /= n
 
-        # plt.figure(figsize=self.figsize)
         plt.streamplot(x, y, vx1, vx2, density=3, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
-
-        if self.show:
-            plt.show()
-        else:
-            plt.savefig(self.filename + ".png", dpi=400, bbox_inches='tight')
-
-        if self.clear:
-            plt.cla()
-            plt.close()
 
 
 class Tools:
