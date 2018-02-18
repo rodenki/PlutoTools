@@ -8,7 +8,29 @@ np.set_printoptions(threshold=500)
 
 
 class Data:
-    def __init__(self, frame):
+    def __init__(self, path):
+
+        self.initialize()
+
+        try:
+            self.loadData(path)
+        except OSError as e:
+            print("Error while reading path. Description:")
+            print(e)
+
+    @classmethod
+    def fromFrame(cls, frame):
+        try:
+            path = "data." + frame + ".dbl.h5"
+            return cls(path)
+
+        except OSError as e:
+            print("Error while reading path. Description:")
+            print(e)
+            return None
+
+
+    def initialize(self):
         self.filename = ""
         self.unitDensity = 5.974e-07
         self.unitNumberDensity = 3.572e+17
@@ -35,8 +57,6 @@ class Data:
         self.variables = {}
         self.timestep = ""
         self.hdf5File = None
-
-        self.loadFrame(frame)
 
     def orbits(self, radius, time):
         return time * self.year * np.sqrt(self.G * self.solarMass / (radius*self.unitLength)**3) / (2.0 * np.pi)
