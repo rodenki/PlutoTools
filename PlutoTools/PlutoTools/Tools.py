@@ -260,7 +260,7 @@ class Interpolate:
     	pass
 
     @staticmethod
-    def interpolatePoint(data, ticks, point):
+    def interpolatePoint(ticks, data, point):
         f = scipy.interpolate.interp1d(ticks, data)
         return f(point)    
 
