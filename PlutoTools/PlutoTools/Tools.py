@@ -209,7 +209,7 @@ class Compute:
         x, y = trans.polarCoordsToCartesian()
         omega = np.sqrt(1.0 / x**3)
         H = cs / omega
-        return H[-1]
+        return H
 
     def pressureScaleHeightFlat(self):
         temp = self.computeTemperature()

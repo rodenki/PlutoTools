@@ -40,6 +40,9 @@ class Plotter:
     def setFigsize(self, width, height):
         self.figsize = (width, height)
 
+    def setInterpolation(self, inter):
+    	self.interpolate = inter
+
     def show(self):
         plt.show()
 
@@ -81,12 +84,12 @@ class Plotter:
 
     def plotLineData(self, lineData):
         newTicks = np.linspace(*self.xrange)
-        f = scipy.interpolate.interp1d(self.data.x1, lineData)
+        f = scipy.interpolate.InterpolatedUnivariateSpline(self.data.x1, lineData, k=1)
         interpolated = f(newTicks)
 
         plt.plot(newTicks, interpolated, 'g')
 
-    def plotVelocityFieldLines(self):
+    def plotVelocityFieldLines(self, density=3):
 
         self.interpolate = True
         self.plotVariable(self.data.variables["rho"])
@@ -100,10 +103,10 @@ class Plotter:
         vx1 /= n
         vx2 /= n
 
-        plt.streamplot(x, y, vx1, vx2, density=3, arrowstyle='->', linewidth=1,
+        plt.streamplot(x, y, vx1, vx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
 
-    def plotMagneticFieldLines(self):
+    def plotMagneticFieldLines(self, density=3):
 
         self.interpolate = True
         self.plotVariable(self.data.variables["rho"])
@@ -117,7 +120,7 @@ class Plotter:
         bx1 /= n
         bx2 /= n
 
-        plt.streamplot(x, y, bx1, bx2, density=3, arrowstyle='->', linewidth=1,
+        plt.streamplot(x, y, bx1, bx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
 
     def plotMagneticField(self, dx1=10, dx2=5, scale=40, width=0.001, x1_start=0):
