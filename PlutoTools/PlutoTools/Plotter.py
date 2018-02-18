@@ -8,7 +8,6 @@ rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 np.set_printoptions(threshold=500)
 
-from .Data import Data
 from .Tools import Transform
 from .Tools import Interpolate
 

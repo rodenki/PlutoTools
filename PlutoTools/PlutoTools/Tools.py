@@ -260,8 +260,8 @@ class Interpolate:
     	pass
 
     @staticmethod
-    def interpolatePoint(ticks, point):
-        f = scipy.interpolate.interp1d(ticks, self.data)
+    def interpolatePoint(data, ticks, point):
+        f = scipy.interpolate.interp1d(ticks, data)
         return f(point)    
 
     # Returns single interpolated value on a regular grid (faster than griddata)
