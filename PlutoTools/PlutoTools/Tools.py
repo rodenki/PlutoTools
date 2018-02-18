@@ -5,8 +5,6 @@ from scipy import stats
 from scipy.ndimage import map_coordinates
 import matplotlib.pyplot as plt
 from matplotlib import rc
-from matplotlib import ticker, cm
-from matplotlib.colors import LogNorm
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 np.set_printoptions(threshold=500)
@@ -50,7 +48,7 @@ class Compute:
         total = np.sum(mass) * self.data.unitDensity * self.data.unitLength**3 / self.data.solarMass
         return total
 
-    def computeTotalMasses(path):
+    def computeTotalMasses(self, path):
         masses = []
         times = []
         for file in os.listdir(path):
