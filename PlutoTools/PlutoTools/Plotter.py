@@ -1,8 +1,5 @@
-import os
 import numpy as np
 import scipy
-from scipy import stats
-from scipy.ndimage import map_coordinates
 import matplotlib.pyplot as plt
 from matplotlib import rc
 from matplotlib import ticker, cm
@@ -11,10 +8,9 @@ rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 np.set_printoptions(threshold=500)
 
-from . import Data
-from . import Transform
-from . import Interpolate
-from . import Compute
+from .Data import Data
+from .Tools import Transform
+from .Tools import Interpolate
 
 
 class Plotter:
@@ -59,8 +55,8 @@ class Plotter:
         plt.close()
 
     def plotVariable(self, variable):
-    	t = Transform(self.data)
-        x, y = Tools.polarCoordsToCartesian()
+        t = Transform(self.data)
+        x, y = t.polarCoordsToCartesian()
         plt.figure(figsize=self.figsize)
 
         if self.interpolate:

@@ -264,7 +264,7 @@ class Interpolate:
         f = scipy.interpolate.interp1d(ticks, self.data)
         return f(point)    
 
-    # Returns single interpolated value on a regular grid (faster than gridself.data)
+    # Returns single interpolated value on a regular grid (faster than griddata)
     @staticmethod
     def singlePointInterpolation(t, p, vx1, vx2, x_range, y_range):
         pp = [[(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])],
@@ -295,13 +295,14 @@ class Interpolate:
 
     @staticmethod
     def interpolateToUniformGrid(data, variable, x_range, y_range):
-        x, y = Tools.polarCoordsToCartesian(data.x1, data.x2)
+        t = Transform(data)
+        x, y = t.polarCoordsToCartesian()
         x = np.ravel(x)
         y = np.ravel(y)
         variable = np.ravel(variable)
         points = np.column_stack((x, y))
         grid_x, grid_y = np.meshgrid(np.linspace(*x_range), np.linspace(*y_range))
-        newVariable = scipy.interpolate.gridself.data(points, variable, (grid_x, grid_y))
+        newVariable = scipy.interpolate.griddata(points, variable, (grid_x, grid_y))
         grid_r = np.sqrt(grid_x**2 + grid_y**2)
         newVariable[grid_r < 1.0] = np.nan
         return grid_x, grid_y, newVariable
