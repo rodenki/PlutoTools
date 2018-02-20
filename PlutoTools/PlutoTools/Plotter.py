@@ -29,7 +29,7 @@ class Plotter:
         self.orbitalDistance = 1.0
 
     def setXrange(self, start, stop, n):
-        self.xrange = [start, stop, n] 
+        self.xrange = [start, stop, n]
 
     def setYrange(self, start, stop, n):
         self.yrange = [start, stop, n]
@@ -50,7 +50,7 @@ class Plotter:
         if filename == None:
             plt.savefig(self.filename + ".png")
         else:
-            plt.savefig(filename)            
+            plt.savefig(filename)
 
     def clear(self):
         plt.cla()
@@ -79,6 +79,8 @@ class Plotter:
 
         plt.xlabel('Radius [AU]')
         plt.ylabel('z [AU]')
+        plt.xlim(*self.xrange)
+        plt.ylim(*self.yrange)
         orbits = self.data.orbits(self.orbitalDistance, self.data.time)
         plt.title("t = " + str(self.data.time) + ", " + str(int(orbits)) + " orbits")
 
@@ -142,5 +144,3 @@ class Plotter:
         bx2 /= n
 
         plt.quiver(x, y, bx1, bx2, width=width, scale=scale, color='k')
-
-

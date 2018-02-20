@@ -19,9 +19,10 @@ class Data:
             print(e)
 
     @classmethod
-    def fromFrame(cls, frame):
+    def fromFrame(cls, frame, prefix=""):
         try:
-            path = "data." + frame + ".dbl.h5"
+            cls.prefix = prefix
+            path = cls.prefix + "data." + frame + ".dbl.h5"
             return cls(path)
 
         except OSError as e:
@@ -59,7 +60,7 @@ class Data:
         self.hdf5File = None
 
     def orbits(self, radius, time):
-        return time * self.year * np.sqrt(self.G * self.solarMass / (radius*self.unitLength)**3) / (2.0 * np.pi)
+        return time * self.year * self.unitTimeYears * np.sqrt(self.G * self.solarMass / (radius*self.unitLength)**3) / (2.0 * np.pi)
 
     def loadVariable(self, title):
         try:
@@ -127,7 +128,7 @@ class Data:
         self.loadData("data." + frame + ".dbl.h5")
 
     def loadGridData(self):
-        lines = [line.rstrip('\n') for line in open('grid.out')]
+        lines = [line.rstrip('\n') for line in open(self.prefix + 'grid.out')]
         for i, line in enumerate(lines):
             if line[0] != '#':
                 lines = lines[i:]
