@@ -232,18 +232,18 @@ class Transform:
         vx2 = self.data.variables["vx2"]
         x2 = np.transpose(np.tile(self.data.x2, (len(self.data.x1), 1)))
 
-        vx1 = vx1 * np.sin(x2) + vx2 * np.cos(x2)
-        vx2 = vx1 * np.cos(x2) - vx2 * np.sin(x2)
-        return vx1, vx2
+        vx1_t = vx1 * np.sin(x2) + vx2 * np.cos(x2)
+        vx2_t = vx1 * np.cos(x2) - vx2 * np.sin(x2)
+        return vx1_t, vx2_t
 
     def transformMagneticFieldToCylindrical(self):
         bx1 = self.data.variables["bx1"]
         bx2 = self.data.variables["bx2"]
         x2 = np.transpose(np.tile(self.data.x2, (len(self.data.x1), 1)))
 
-        bx1 = bx1 * np.sin(x2) + bx2 * np.cos(x2)
-        bx2 = bx1 * np.cos(x2) - bx2 * np.sin(x2)
-        return bx1, bx2
+        bx1_t = bx1 * np.sin(x2) + bx2 * np.cos(x2)
+        bx2_t = bx1 * np.cos(x2) - bx2 * np.sin(x2)
+        return bx1_t, bx2_t
 
     def polarCoordsToCartesian(self):
         r_matrix, th_matrix = np.meshgrid(self.data.x1, self.data.x2)
