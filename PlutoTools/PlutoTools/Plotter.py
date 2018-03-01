@@ -1,12 +1,13 @@
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
-from matplotlib import rc
+from matplotlib import rc, warnings
 from matplotlib import ticker, cm
 from matplotlib.colors import LogNorm
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 np.set_printoptions(threshold=500)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 from .Tools import Transform
 from .Tools import Interpolate
@@ -125,7 +126,7 @@ class Plotter:
         plt.streamplot(x, y, bx1, bx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
 
-    def plotMagneticField(self, dx1=10, dx2=5, scale=40, width=0.001, x1_start=0):
+    def plotMagneticField(self, scale=40, width=0.001):
 
         self.interpolate = True
         self.plotVariable(self.data.variables["rho"])

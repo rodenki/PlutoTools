@@ -4,6 +4,9 @@ import numpy as np
 import xml.etree.cElementTree as xml
 from copy import deepcopy
 
+np.warnings.filterwarnings("ignore", category=FutureWarning)
+
+
 np.set_printoptions(threshold=500)
 
 
