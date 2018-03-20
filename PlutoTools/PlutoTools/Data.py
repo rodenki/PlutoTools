@@ -62,6 +62,9 @@ class Data:
         self.timestep = ""
         self.hdf5File = None
 
+    def getXrange(self):
+        return [self.x1[0], self.x1[-1], len(self.x1)]
+
     def orbits(self, radius, time):
         return time * self.year * self.unitTimeYears * np.sqrt(self.G * self.solarMass / (radius*self.unitLength)**3) / (2.0 * np.pi)
 

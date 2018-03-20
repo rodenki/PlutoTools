@@ -9,7 +9,7 @@ rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 np.set_printoptions(threshold=500)
 
-from . import Data
+from .Data import Data
 
 
 class Compute:
@@ -28,12 +28,15 @@ class Compute:
         return mach
 
     def computeSonicPoints(self):
-        vabs = self.computeAbsoluteVelocities() * self.data.unitVelocity
-        temp = self.computeTemperature()
-        cs = np.sqrt(self.data.kb * temp / (self.data.mu * self.data.mp))
-        mach = vabs / cs
-        mach = stats.threshold(mach, threshmin=0.95, threshmax=1.05)
-        return mach
+        mach = self.computeMachNumbers()
+        res = np.logical_and(mach > 0.995, mach < 1.005)
+        res = np.where(res)
+        x1 = self.data.x1[res[1]]
+        x2 = self.data.x2[res[0]] 
+        x = x1 * np.sin(x2)
+        y = x1 * np.cos(x2)
+        sort = x.argsort()
+        return x[sort], y[sort]
 
     def computeTemperature(self):
         kelvin = 1.072914e+05
@@ -61,7 +64,7 @@ class Compute:
         return np.array(masses), np.array(times)
 
     def jacobiPotential(self, rho, prs, vx3, r):
-        return prs / rho + 1 / r - 0.5 * r**4 * vx3**2
+        return prs / rho + 1 / r# - 0.5 * r**4 * vx3**2
 
     def computeJacobiPotential(self, x, y, vx3, rho, prs, x_range, y_range):
         # xticks = np.linspace(x_range[0], x_range[1], x_range[2])
@@ -91,7 +94,7 @@ class Compute:
         solver.set_initial_value(p0, t0)
 
         # mimics the wind launching front
-        H = 4.8 * self.pressureScaleHeightFlat()
+        H = 4.75 * self.pressureScaleHeightFlat()
         xticks = self.data.x1
 
         x, y = [], []
@@ -123,7 +126,7 @@ class Compute:
 
         trans = Transform(self.data)
 
-        x, y = trans.polarCoordsToCartesian(self.data.x1, self.data.x2)
+        x, y = trans.polarCoordsToCartesian()
         vx1, vx2 = trans.transformVelocityFieldToCylindrical()
         x_range = [1, 100, 1000]
         y_range = [0, 100, 1000]
@@ -137,9 +140,9 @@ class Compute:
         vx1 = -vx1
         vx2 = -vx2
 
-        losses = losses[20:]
-        x_start = x_start[20:]
-        y_start = y_start[20:]
+        losses = losses[15:]
+        x_start = x_start[15:]
+        y_start = y_start[15:]
 
         radii = []
         potentials = []
@@ -176,9 +179,13 @@ class Compute:
         return losses, times
 
     def plotMassLosses(self, path, filename="losses.eps"):
-        losses, times = self.computeMassLosses("./")
+        losses, times = self.computeMassLosses(path)
         losses = np.array(losses, dtype=np.double)
         times = np.array(times, dtype=np.double)
+
+        key = times.argsort()
+        times = times[key]
+        losses = losses[key]
         np.savetxt("losses.dat", (times, losses))
 
         plt.rc('text', usetex=True)
@@ -186,6 +193,7 @@ class Compute:
         plt.semilogy(times, losses)
         plt.xlabel(r't [yr]')
         plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
+        plt.ylim(1e-8, 4e-7)
         plt.savefig(filename)
 
     def averageFrames(self, path, variable, frameRange):
@@ -209,7 +217,7 @@ class Compute:
         x, y = trans.polarCoordsToCartesian()
         omega = np.sqrt(1.0 / x**3)
         H = cs / omega
-        return H
+        return H[-1]
 
     def pressureScaleHeightFlat(self):
         temp = self.computeTemperature()
@@ -218,7 +226,7 @@ class Compute:
         x, y = trans.polarCoordsToCartesian()
         omega = np.sqrt(1.0 / x**3)
         H = cs / omega
-        return np.power(H[-1], 4.5/5.0)
+        return np.power(H[-1], 4.33/5.0)
 
 
 

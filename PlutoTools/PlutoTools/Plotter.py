@@ -1,7 +1,7 @@
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
-from matplotlib import rc, warnings
+from matplotlib import rc, rcParams, warnings
 from matplotlib import ticker, cm
 from matplotlib.colors import LogNorm
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
@@ -28,6 +28,8 @@ class Plotter:
         self.log = True
         self.interpolate = False
         self.orbitalDistance = 1.0
+        self.linewidth = 1.0
+        self.title = ""
 
     def setXrange(self, start, stop, n):
         self.xrange = [start, stop, n]
@@ -44,14 +46,32 @@ class Plotter:
     def setInterpolation(self, inter):
     	self.interpolate = inter
 
+    def setLogscale(self, log):
+        self.log = log
+
+    def setLimits(self, limits):
+        self.vlimits = limits
+
+    def setFontSize(self, size):
+        rcParams.update({'font.size': size})
+
+    def setTitle(self, title):
+        self.title = title
+
+    def setOrbitalDistance(self, distance):
+        self.orbitalDistance = distance
+
+    def setLineWidth(self, width):
+        self.width = width
+
     def show(self):
         plt.show()
 
     def savefig(self, filename=None):
         if filename == None:
-            plt.savefig(self.filename + ".png")
+            plt.savefig(self.filename + ".png", dpi=300)
         else:
-            plt.savefig(filename)
+            plt.savefig(filename, dpi=300)
 
     def clear(self):
         plt.cla()
@@ -66,12 +86,15 @@ class Plotter:
             x, y, variable = Interpolate.interpolateToUniformGrid(self.data, variable, self.xrange, self.yrange)
 
         if self.log:
-            plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable),
-                                                        vmax=np.nanmax(variable)), cmap=cm.inferno)
-            # plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=100,
-            #                                             vmax=1e4), cmap=cm.inferno)
+            if len(self.vlimits) > 0:
+                plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=self.vlimits[0], vmax=self.vlimits[1]), cmap=cm.inferno)
+            else:
+                plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable), vmax=np.nanmax(variable)), cmap=cm.inferno)
         else:
-            plt.pcolormesh(x, y, variable, cmap=cm.inferno) #, vmin=vlimits[0], vmax=vlimits[1])
+            if len(self.vlimits) > 0:
+                plt.pcolormesh(x, y, variable, vmin=self.vlimits[0], vmax=self.vlimits[1], cmap=cm.inferno)
+            else:
+                plt.pcolormesh(x, y, variable, cmap=cm.inferno)
 
         cb = plt.colorbar()
         tick_locator = ticker.LogLocator(numdecs=10)
@@ -83,19 +106,20 @@ class Plotter:
         plt.xlim(*self.xrange)
         plt.ylim(*self.yrange)
         orbits = self.data.orbits(self.orbitalDistance, self.data.time)
-        plt.title("t = " + str(self.data.time) + ", " + str(int(orbits)) + " orbits")
+        plt.title(self.title + " t = " + str(self.data.time) + ", " + str(int(orbits)) + " orbits")
 
-    def plotLineData(self, lineData):
-        newTicks = np.linspace(*self.xrange)
-        f = scipy.interpolate.InterpolatedUnivariateSpline(self.data.x1, lineData, k=1)
+    def plotLineData(self, x, y):
+        newTicks = np.linspace(np.min(x), np.max(x), self.xrange[2])
+        f = scipy.interpolate.InterpolatedUnivariateSpline(x, y, k=1)
         interpolated = f(newTicks)
+        plt.plot(newTicks, interpolated, 'w', linewidth=self.width)
 
-        plt.plot(newTicks, interpolated, 'g')
-
-    def plotVelocityFieldLines(self, density=3):
-
+    def plotVelocityFieldLines(self, density=3, variable=None):
         self.interpolate = True
-        self.plotVariable(self.data.variables["rho"])
+        if variable is not None:
+            self.plotVariable(variable)
+        else:
+            self.plotVariable(self.data.variables["rho"])
 
         t = Transform(self.data)
         vx1, vx2 = t.transformVelocityFieldToCylindrical()
@@ -109,10 +133,12 @@ class Plotter:
         plt.streamplot(x, y, vx1, vx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
 
-    def plotMagneticFieldLines(self, density=3):
-
+    def plotMagneticFieldLines(self, density=3, variable=None):
         self.interpolate = True
-        self.plotVariable(self.data.variables["rho"])
+        if variable:
+            self.plotVariable(variable)
+        else:
+            self.plotVariable(self.data.variables["rho"])
 
         t = Transform(self.data)
         bx1, bx2 = t.transformMagneticFieldToCylindrical()
