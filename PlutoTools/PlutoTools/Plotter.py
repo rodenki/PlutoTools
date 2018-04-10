@@ -119,7 +119,7 @@ class Plotter:
         if variable is not None:
             self.plotVariable(variable)
         else:
-            self.plotVariable(self.data.variables["rho"])
+            self.plotVariable(self.data.variables["rho"]) * self.data.unitNumberDensity
 
         t = Transform(self.data)
         vx1, vx2 = t.transformVelocityFieldToCylindrical()
@@ -138,7 +138,7 @@ class Plotter:
         if variable:
             self.plotVariable(variable)
         else:
-            self.plotVariable(self.data.variables["rho"])
+            self.plotVariable(self.data.variables["rho"]) * self.data.unitNumberDensity
 
         t = Transform(self.data)
         bx1, bx2 = t.transformMagneticFieldToCylindrical()
@@ -155,7 +155,7 @@ class Plotter:
     def plotMagneticField(self, scale=40, width=0.001):
 
         self.interpolate = True
-        self.plotVariable(self.data.variables["rho"])
+        self.plotVariable(self.data.variables["rho"]) * self.data.unitNumberDensity
 
         t = Transform(self.data)
         bx1, bx2 = t.transformMagneticFieldToCylindrical()
