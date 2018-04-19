@@ -32,7 +32,7 @@ class Compute:
         res = np.logical_and(mach > 0.995, mach < 1.005)
         res = np.where(res)
         x1 = self.data.x1[res[1]]
-        x2 = self.data.x2[res[0]] 
+        x2 = self.data.x2[res[0]]
         x = x1 * np.sin(x2)
         y = x1 * np.cos(x2)
         sort = x.argsort()
@@ -80,7 +80,7 @@ class Compute:
             potential.append(self.jacobiPotential(rho_i, prs_i, vx3_i, r)[0])
         return potential
 
-    def computeStreamline(self, point, x, y, vx1, vx2, vx3, rho, prs, x_range, y_range):
+    def computeStreamline(self, point, x, y, vx1, vx2, vx3, rho, prs, temp, x_range, y_range):
         # print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
         # vx, vy = np.ravel(self.data.variables["vx1"]), np.ravel(self.data.variables["vx2"])
 
@@ -99,14 +99,20 @@ class Compute:
 
         x, y = [], []
 
-        while solver.y[1] > Interpolate.interpolatePoint(xticks, H, solver.y[0]):
+        #while solver.y[1] > Interpolate.interpolatePoint(xticks, H, solver.y[0]):
+        while Interpolate.interpolatePoint2D(x_range, y_range, temp, (solver.y[0], solver.y[1])) > 2300:
             solver.integrate(t1, step=True)
-            x.append(solver.y[0])
-            y.append(solver.y[1])
+            x1 = solver.y[0]
+            x2 = solver.y[1]
+            x.append(x1)
+            y.append(x2)
+            #print(x1, x2)
+            #print(Interpolate.interpolatePoint2D(x_range, y_range, temp, (x1, x2)))
             # print(solver.y)
         print(solver.y)
-        print("Computing Jacobi potential...")
-        potential = self.computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range)
+        #print("Computing Jacobi potential...")
+        #potential = self.computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range)
+        potential = 0.0
         return solver.y[0], potential
 
     def computeRadialMassLosses(self):
@@ -135,20 +141,21 @@ class Compute:
         x, y, vx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["vx3"], x_range, y_range)
         x, y, rho = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["rho"], x_range, y_range)
         x, y, prs = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["prs"], x_range, y_range)
+        x, y, temp = Interpolate.interpolateToUniformGrid(self.data, self.computeTemperature(), x_range, y_range)
 
 
         vx1 = -vx1
         vx2 = -vx2
 
-        losses = losses[15:]
-        x_start = x_start[15:]
-        y_start = y_start[15:]
+        losses = losses[150:]
+        x_start = x_start[150:]
+        y_start = y_start[150:]
 
         radii = []
         potentials = []
 
         for i, j in zip(x_start, y_start):
-            radius, potential = self.computeStreamline((i, j), x, y, vx1, vx2, vx3, rho, prs, x_range, y_range)
+            radius, potential = self.computeStreamline((i, j), x, y, vx1, vx2, vx3, rho, prs, temp, x_range, y_range)
             radii.append(radius)
             potentials.append(potential)
 
@@ -193,7 +200,7 @@ class Compute:
         plt.semilogy(times, losses)
         plt.xlabel(r't [yr]')
         plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
-        plt.ylim(1e-8, 4e-7)
+        plt.ylim(5e-9, 2e-8)
         plt.savefig(filename)
 
     def averageFrames(self, path, variable, frameRange):
@@ -268,7 +275,7 @@ class Interpolate:
     @staticmethod
     def interpolatePoint(ticks, data, point):
         f = scipy.interpolate.interp1d(ticks, data)
-        return f(point)    
+        return f(point)
 
     # Returns single interpolated value on a regular grid (faster than griddata)
     @staticmethod
@@ -276,14 +283,14 @@ class Interpolate:
         pp = [[(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])],
                       [(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])]]
         pp = np.array(pp)
-        return [map_coordinates(vx1, pp, order=1), map_coordinates(vx2, pp, order=1)] 
+        return [map_coordinates(vx1, pp, order=1), map_coordinates(vx2, pp, order=1)]
 
     @staticmethod
     def interpolatePoint2D(x_range, y_range, data, p):
         pp = [[(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])],
                       [(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])]]
         pp = np.array(pp)
-        return map_coordinates(data, pp, order=1) 
+        return map_coordinates(data, pp, order=1)
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
@@ -327,5 +334,3 @@ class Tools:
                 if frame % stride != 0:
                     print("deleting frame " + str(frame))
                     os.remove(os.path.join(path, current_file))
-
-
