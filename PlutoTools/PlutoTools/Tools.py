@@ -80,7 +80,7 @@ class Compute:
             potential.append(self.jacobiPotential(rho_i, prs_i, vx3_i, r)[0])
         return potential
 
-    def computeStreamline(self, point, x, y, vx1, vx2, vx3, rho, prs, x_range, y_range):
+    def computeStreamline(self, point, x, y, vx1, vx2, vx3, rho, prs, x_range, y_range, limit):
         # print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
         # vx, vy = np.ravel(self.data.variables["vx1"]), np.ravel(self.data.variables["vx2"])
 
@@ -101,22 +101,22 @@ class Compute:
         vabs = np.sqrt(vx1**2 + vx2**2)
 
         #while solver.y[1] > Interpolate.interpolatePoint(xticks, H, solver.y[0]):
-        while Interpolate.interpolatePoint2D(x_range, y_range, vabs, (solver.y[0], solver.y[1])) > 4e-4:
+        while Interpolate.interpolatePoint2D(x_range, y_range, vabs, (solver.y[0], solver.y[1])) > limit:
             solver.integrate(t1, step=True)
             x1 = solver.y[0]
             x2 = solver.y[1]
             x.append(x1)
             y.append(x2)
             #print(x1, x2)
-            print(Interpolate.interpolatePoint2D(x_range, y_range, vabs, (x1, x2)))
-            print(solver.y)
+            # print(Interpolate.interpolatePoint2D(x_range, y_range, vabs, (x1, x2)))
+            # print(solver.y)
         print(solver.y)
         #print("Computing Jacobi potential...")
         #potential = self.computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range)
         potential = 0.0
         return solver.y[0], potential
 
-    def computeRadialMassLosses(self):
+    def computeRadialMassLosses(self, resolution=1000, limit=4e-4):
         computeLimit = int(len(self.data.dx1) * 0.99)
         rho = self.data.variables["rho"][:,computeLimit] * self.data.unitDensity
         vx1 = self.data.variables["vx1"][:,computeLimit] * self.data.unitVelocity
@@ -127,7 +127,7 @@ class Compute:
         theta = self.data.x2[tempRange]
 
         surface = 0.5*np.pi / len(self.data.x2) * r**2 * 2.0 * np.pi * self.data.unitLength**2
-        losses = 2 * surface * rho[tempRange] * vx1[tempRange] * self.data.year / self.data.solarMass
+        losses = surface * rho[tempRange] * vx1[tempRange] * self.data.year / self.data.solarMass
         x_start = r * np.sin(theta)
         y_start = r * np.cos(theta)
 
@@ -135,8 +135,8 @@ class Compute:
 
         x, y = trans.polarCoordsToCartesian()
         vx1, vx2 = trans.transformVelocityFieldToCylindrical()
-        x_range = [1, 100, 1000]
-        y_range = [0, 100, 1000]
+        x_range = [1, 100, resolution]
+        y_range = [0, 100, resolution]
         x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, x_range, y_range)
         x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, x_range, y_range)
         x, y, vx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["vx3"], x_range, y_range)
@@ -156,7 +156,7 @@ class Compute:
         potentials = []
 
         for i, j in zip(x_start, y_start):
-            radius, potential = self.computeStreamline((i, j), x, y, vx1, vx2, vx3, rho, prs, x_range, y_range)
+            radius, potential = self.computeStreamline((i, j), x, y, vx1, vx2, vx3, rho, prs, x_range, y_range, limit)
             radii.append(radius)
             potentials.append(potential)
 
@@ -167,12 +167,12 @@ class Compute:
         rho = data.variables["rho"][:,computeLimit] * data.unitDensity
         vx1 = data.variables["vx1"][:,computeLimit] * data.unitVelocity
         temp = self.computeTemperature()[:,computeLimit]
-        tempRange = [i for i,v in enumerate(temp) if v > 1000]
+        tempRange = [i for i,v in enumerate(temp) if v > 1000 and vx1[i] > 0]
         tempRange = range(min(tempRange), max(tempRange))
         surface = 0.5*np.pi / len(data.x2) * data.x1[computeLimit]**2 * 2.0 * np.pi * data.unitLength**2
-        massLoss = surface * rho[tempRange] * vx1[tempRange]
+        massLoss = surface * rho[tempRange] * vx1[tempRange] * data.year / data.solarMass
         totalMassLoss = np.sum(massLoss)
-        return totalMassLoss * data.year / data.solarMass
+        return totalMassLoss
 
     def computeMassLosses(self, path):
         losses = []
