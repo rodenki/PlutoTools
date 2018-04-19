@@ -32,7 +32,7 @@ class Compute:
         res = np.logical_and(mach > 0.995, mach < 1.005)
         res = np.where(res)
         x1 = self.data.x1[res[1]]
-        x2 = self.data.x2[res[0]] 
+        x2 = self.data.x2[res[0]]
         x = x1 * np.sin(x2)
         y = x1 * np.cos(x2)
         sort = x.argsort()
@@ -103,10 +103,11 @@ class Compute:
             solver.integrate(t1, step=True)
             x.append(solver.y[0])
             y.append(solver.y[1])
-            # print(solver.y)
-        print(solver.y)
-        print("Computing Jacobi potential...")
-        potential = self.computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range)
+            print(solver.y)
+        #print(solver.y)
+        #print("Computing Jacobi potential...")
+        #potential = self.computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range)
+        potential = 0
         return solver.y[0], potential
 
     def computeRadialMassLosses(self):
@@ -140,9 +141,9 @@ class Compute:
         vx1 = -vx1
         vx2 = -vx2
 
-        losses = losses[15:]
-        x_start = x_start[15:]
-        y_start = y_start[15:]
+        losses = losses[150:151]
+        x_start = x_start[150:151]
+        y_start = y_start[150:151]
 
         radii = []
         potentials = []
@@ -268,7 +269,7 @@ class Interpolate:
     @staticmethod
     def interpolatePoint(ticks, data, point):
         f = scipy.interpolate.interp1d(ticks, data)
-        return f(point)    
+        return f(point)
 
     # Returns single interpolated value on a regular grid (faster than griddata)
     @staticmethod
@@ -276,14 +277,14 @@ class Interpolate:
         pp = [[(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])],
                       [(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])]]
         pp = np.array(pp)
-        return [map_coordinates(vx1, pp, order=1), map_coordinates(vx2, pp, order=1)] 
+        return [map_coordinates(vx1, pp, order=1), map_coordinates(vx2, pp, order=1)]
 
     @staticmethod
     def interpolatePoint2D(x_range, y_range, data, p):
         pp = [[(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])],
                       [(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])]]
         pp = np.array(pp)
-        return map_coordinates(data, pp, order=1) 
+        return map_coordinates(data, pp, order=1)
 
     @staticmethod
     def interpolateRadialGrid(data, newTicks):
@@ -327,5 +328,3 @@ class Tools:
                 if frame % stride != 0:
                     print("deleting frame " + str(frame))
                     os.remove(os.path.join(path, current_file))
-
-
