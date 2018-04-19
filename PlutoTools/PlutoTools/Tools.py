@@ -80,7 +80,7 @@ class Compute:
             potential.append(self.jacobiPotential(rho_i, prs_i, vx3_i, r)[0])
         return potential
 
-    def computeStreamline(self, point, x, y, vx1, vx2, vx3, rho, prs, temp, x_range, y_range):
+    def computeStreamline(self, point, x, y, vx1, vx2, vx3, rho, prs, x_range, y_range):
         # print(Tools.singlePointInterpolation(0, p0, vx1, vx2, x_range, y_range))
         # vx, vy = np.ravel(self.data.variables["vx1"]), np.ravel(self.data.variables["vx2"])
 
@@ -94,21 +94,22 @@ class Compute:
         solver.set_initial_value(p0, t0)
 
         # mimics the wind launching front
-        H = 4.75 * self.pressureScaleHeightFlat()
-        xticks = self.data.x1
+        #H = 4.75 * self.pressureScaleHeightFlat()
+        #xticks = self.data.x1
 
         x, y = [], []
+        vabs = np.sqrt(vx1**2 + vx2**2)
 
         #while solver.y[1] > Interpolate.interpolatePoint(xticks, H, solver.y[0]):
-        while Interpolate.interpolatePoint2D(x_range, y_range, temp, (solver.y[0], solver.y[1])) > 2300:
+        while Interpolate.interpolatePoint2D(x_range, y_range, vabs, (solver.y[0], solver.y[1])) > 4e-4:
             solver.integrate(t1, step=True)
             x1 = solver.y[0]
             x2 = solver.y[1]
             x.append(x1)
             y.append(x2)
             #print(x1, x2)
-            #print(Interpolate.interpolatePoint2D(x_range, y_range, temp, (x1, x2)))
-            # print(solver.y)
+            print(Interpolate.interpolatePoint2D(x_range, y_range, vabs, (x1, x2)))
+            print(solver.y)
         print(solver.y)
         #print("Computing Jacobi potential...")
         #potential = self.computeJacobiPotential(x, y, vx3, rho, prs, x_range, y_range)
@@ -141,7 +142,7 @@ class Compute:
         x, y, vx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["vx3"], x_range, y_range)
         x, y, rho = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["rho"], x_range, y_range)
         x, y, prs = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["prs"], x_range, y_range)
-        x, y, temp = Interpolate.interpolateToUniformGrid(self.data, self.computeTemperature(), x_range, y_range)
+        # x, y, temp = Interpolate.interpolateToUniformGrid(self.data, self.computeTemperature(), x_range, y_range)
 
 
         vx1 = -vx1
@@ -155,7 +156,7 @@ class Compute:
         potentials = []
 
         for i, j in zip(x_start, y_start):
-            radius, potential = self.computeStreamline((i, j), x, y, vx1, vx2, vx3, rho, prs, temp, x_range, y_range)
+            radius, potential = self.computeStreamline((i, j), x, y, vx1, vx2, vx3, rho, prs, x_range, y_range)
             radii.append(radius)
             potentials.append(potential)
 
