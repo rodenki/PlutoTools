@@ -116,7 +116,7 @@ class Compute:
         potential = 0.0
         return solver.y[0], potential
 
-    def computeRadialMassLosses(self, resolution=1000, limit=4e-4):
+    def computeRadialMassLosses(self, resolution=1000, limit=4e-4, start=100):
         computeLimit = int(len(self.data.dx1) * 0.99)
         rho = self.data.variables["rho"][:,computeLimit] * self.data.unitDensity
         vx1 = self.data.variables["vx1"][:,computeLimit] * self.data.unitVelocity
@@ -148,9 +148,9 @@ class Compute:
         vx1 = -vx1
         vx2 = -vx2
 
-        losses = losses[150:]
-        x_start = x_start[150:]
-        y_start = y_start[150:]
+        losses = losses[start:]
+        x_start = x_start[start:]
+        y_start = y_start[start:]
 
         radii = []
         potentials = []
