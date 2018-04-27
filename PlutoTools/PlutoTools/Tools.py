@@ -5,7 +5,7 @@ from scipy import stats
 from scipy.ndimage import map_coordinates
 import matplotlib.pyplot as plt
 from matplotlib import rc
-rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+# rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 np.set_printoptions(threshold=500)
 
