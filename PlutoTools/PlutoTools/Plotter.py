@@ -91,16 +91,17 @@ class Plotter:
                 plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=self.vlimits[0], vmax=self.vlimits[1]), cmap=cm.inferno)
             else:
                 plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable), vmax=np.nanmax(variable)), cmap=cm.inferno)
+            cb = plt.colorbar()
+            tick_locator = ticker.LogLocator(numdecs=10)
+            cb.locator = tick_locator
+            cb.update_ticks()
         else:
             if len(self.vlimits) > 0:
                 plt.pcolormesh(x, y, variable, vmin=self.vlimits[0], vmax=self.vlimits[1], cmap=cm.inferno)
             else:
                 plt.pcolormesh(x, y, variable, cmap=cm.inferno)
 
-        cb = plt.colorbar()
-        tick_locator = ticker.LogLocator(numdecs=10)
-        cb.locator = tick_locator
-        cb.update_ticks()
+
 
         plt.xlabel('Radius [AU]')
         plt.ylabel('z [AU]')
