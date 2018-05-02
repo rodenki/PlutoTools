@@ -41,6 +41,7 @@ class Data:
         self.unitPressure = 5.329e+06
         self.unitVelocity = 2.987e+06
         self.unitLength = 1.496e+13
+        self.unitMagneticFluxDensity = 8.183e+03
         self.unitTimeYears = 1.588e-01
         self.solarMass = 1.989e33
         self.year = 31536000

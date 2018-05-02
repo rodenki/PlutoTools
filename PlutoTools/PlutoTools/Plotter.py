@@ -137,7 +137,7 @@ class Plotter:
 
     def plotMagneticFieldLines(self, density=3, variable=None):
         self.interpolate = True
-        if variable:
+        if variable is not None:
             self.plotVariable(variable)
         else:
             self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity)
