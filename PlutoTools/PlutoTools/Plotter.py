@@ -109,12 +109,14 @@ class Plotter:
         plt.ylim(*self.yrange)
         orbits = self.data.orbits(self.orbitalDistance, self.data.time)
         plt.title(self.title + " t = " + str(self.data.time) + ", " + str(int(orbits)) + " orbits")
+        return plt
 
     def plotLineData(self, x, y):
         newTicks = np.linspace(np.min(x), np.max(x), self.xrange[2])
         f = scipy.interpolate.InterpolatedUnivariateSpline(x, y, k=1)
         interpolated = f(newTicks)
         plt.plot(newTicks, interpolated, 'w', linewidth=self.width)
+        return plt
 
     def plotVelocityFieldLines(self, density=3, variable=None):
         self.interpolate = True
@@ -134,6 +136,7 @@ class Plotter:
 
         plt.streamplot(x, y, vx1, vx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
+        return plt
 
     def plotMagneticFieldLines(self, density=3, variable=None):
         self.interpolate = True
@@ -153,6 +156,7 @@ class Plotter:
 
         plt.streamplot(x, y, bx1, bx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
+        return plt
 
     def plotMagneticField(self, scale=40, width=0.001):
 
@@ -173,3 +177,4 @@ class Plotter:
         bx2 /= n
 
         plt.quiver(x, y, bx1, bx2, width=width, scale=scale, color='k')
+        return plt
