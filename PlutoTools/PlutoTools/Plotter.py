@@ -77,7 +77,7 @@ class Plotter:
         plt.cla()
         plt.close()
 
-    def plotVariable(self, variable):
+    def plotVariable(self, variable, cmap=cm.inferno):
         #self.data.x2 = self.data.x2[:450]
         t = Transform(self.data)
         x, y = t.polarCoordsToCartesian()
@@ -88,20 +88,19 @@ class Plotter:
 
         if self.log == True:
             if len(self.vlimits) > 0:
-                plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=self.vlimits[0], vmax=self.vlimits[1]), cmap=cm.inferno)
+                plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=self.vlimits[0], vmax=self.vlimits[1]), cmap=cmap)
             else:
-                plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable), vmax=np.nanmax(variable)), cmap=cm.inferno)
+                plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable), vmax=np.nanmax(variable)), cmap=cmap)
             cb = plt.colorbar()
             tick_locator = ticker.LogLocator(numdecs=10)
             cb.locator = tick_locator
             cb.update_ticks()
         else:
             if len(self.vlimits) > 0:
-                plt.pcolormesh(x, y, variable, vmin=self.vlimits[0], vmax=self.vlimits[1], cmap=cm.inferno)
+                plt.pcolormesh(x, y, variable, vmin=self.vlimits[0], vmax=self.vlimits[1], cmap=cmap)
             else:
-                plt.pcolormesh(x, y, variable, cmap=cm.inferno)
-
-
+                plt.pcolormesh(x, y, variable, cmap=cmap)
+            cb = plt.colorbar()
 
         plt.xlabel('Radius [AU]')
         plt.ylabel('z [AU]')
@@ -118,12 +117,12 @@ class Plotter:
         plt.plot(newTicks, interpolated, 'w', linewidth=self.width)
         return plt
 
-    def plotVelocityFieldLines(self, density=3, variable=None):
+    def plotVelocityFieldLines(self, density=3, variable=None, cmap=cm.inferno):
         self.interpolate = True
         if variable is not None:
-            self.plotVariable(variable)
+            self.plotVariable(variable, cmap=cmap)
         else:
-            self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity)
+            self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
 
         t = Transform(self.data)
         vx1, vx2 = t.transformVelocityFieldToCylindrical()
@@ -138,12 +137,12 @@ class Plotter:
                        arrowsize=1.5)
         return plt
 
-    def plotMagneticFieldLines(self, density=3, variable=None):
+    def plotMagneticFieldLines(self, density=3, variable=None, cmap=cm.inferno):
         self.interpolate = True
         if variable is not None:
-            self.plotVariable(variable)
+            self.plotVariable(variable, cmap=cmap)
         else:
-            self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity)
+            self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
 
         t = Transform(self.data)
         bx1, bx2 = t.transformMagneticFieldToCylindrical()
