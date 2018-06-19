@@ -116,9 +116,9 @@ class Data:
             print("No vx3 data")
 
         try:
-            self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['bx1'])
-            self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['bx2'])
-            self.variables["bx3"] = np.array(self.hdf5File[self.timestep]['vars']['bx3'])
+            self.variables["bx1"] = np.array(self.hdf5File[self.timestep]['vars']['Bx1'])
+            self.variables["bx2"] = np.array(self.hdf5File[self.timestep]['vars']['Bx2'])
+            self.variables["bx3"] = np.array(self.hdf5File[self.timestep]['vars']['Bx3'])
         except KeyError:
             #print("Magnetic field not present.")
             pass
