@@ -43,6 +43,33 @@ class Compute:
         mu = 1.37125
         return self.data.variables["prs"] / self.data.variables["rho"] * kelvin * mu
 
+    def computeElsasserNumbers(self, radius):
+        x_range = [0.0, 60.0, 1000]
+        y_range = [-60.0, 60.0, 1000]
+        temp = self.computeTemperature()
+        rho = self.data.variables["rho"] * self.data.unitDensity
+        bx1 = self.data.variables["bx1"] * self.data.unitMagneticFluxDensity
+        bx2 = self.data.variables["bx2"] * self.data.unitMagneticFluxDensity
+        #bx3 = self.data.variables["bx3"] * self.data.unitMagneticFluxDensity
+
+
+        x, y, temp = Interpolate.interpolateToUniformGrid(self.data, temp, x_range, y_range)
+        x, y, rho = Interpolate.interpolateToUniformGrid(self.data, rho, x_range, y_range)
+        x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, bx1, x_range, y_range)
+        x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, bx2, x_range, y_range)
+         #x, y, bx3 = Interpolate.interpolateToUniformGrid(self.data, bx3, x_range, y_range)
+
+        yy = 0.0
+        rho_i = Interpolate.interpolatePoint2D(x_range, y_range, rho, (radius, yy))
+        temp_i = Interpolate.interpolatePoint2D(x_range, y_range, temp, (radius, yy))
+        bz_i = Interpolate.interpolatePoint2D(x_range, y_range, bx2, (radius, yy))
+        H = self.pressureScaleHeightRadius(radius, temp_i)
+        eta_ohm = 1.268206e+17
+        v_a = bz_i / np.sqrt(rho_i)
+        omega = np.sqrt(self.data.G * self.data.solarMass / (radius * self.data.unitLength)**3)
+        elsasser_ohm = v_a**2 / (omega * eta_ohm)
+        return elsasser_ohm
+
     def computeTotalMass(self, data):
         rho = self.data.variables["rho"]
         dV = (self.data.x1**2 - (self.data.x1 - self.data.dx1)**2) / (4.0*len(self.data.x2)) * 2.0 * np.pi * self.data.x1
@@ -218,6 +245,11 @@ class Compute:
         averaged = np.mean(frames, axis=0)
         return averaged
 
+    def pressureScaleHeightRadius(self, radius, temp):
+        cs = np.sqrt(self.data.kb * temp / (self.data.mu * self.data.mp)) / self.data.unitVelocity
+        omega = np.sqrt(1.0 / radius**3)
+        return cs / omega
+
     def pressureScaleHeight(self):
         temp = self.computeTemperature()
         cs = np.sqrt(self.data.kb * temp / (self.data.mu * self.data.mp)) / self.data.unitVelocity
@@ -225,7 +257,7 @@ class Compute:
         x, y = trans.polarCoordsToCartesian()
         omega = np.sqrt(1.0 / x**3)
         H = cs / omega
-        return H[-1]
+        return H
 
     def pressureScaleHeightFlat(self):
         temp = self.computeTemperature()
@@ -306,6 +338,13 @@ class Interpolate:
             data.variables[key] = interpolated
         data.x1 = newTicks
         return data
+
+    @staticmethod
+    def interpolatePoint2DAlternative(x_range, y_range, data, p):
+        pp = [[(p[0] - x_range[0]) * x_range[2] / (x_range[1] - x_range[0])],
+              [(p[1] - y_range[0]) * y_range[2] / (y_range[1] - y_range[0])]]
+        pp = np.array(pp)
+        return map_coordinates(data, pp, order=1)
 
     @staticmethod
     def interpolateToUniformGrid(data, variable, x_range, y_range):
