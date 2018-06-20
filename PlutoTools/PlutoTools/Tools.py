@@ -1,4 +1,5 @@
 import os
+import pickle
 import numpy as np
 import scipy
 from scipy import stats
@@ -10,6 +11,178 @@ rc('text', usetex=True)
 np.set_printoptions(threshold=500)
 
 from .Data import Data
+
+
+class IonFraction:
+    def __init__(self, t, zeta, nn, xe):
+        self.t = t
+        self.zeta = zeta
+        self.nn = nn
+        self.xe = xe
+    def __str__(self):
+        return "T: %e Zeta: %e nn: %e xe: %e" % (self.t, self.zeta, self.nn, self.xe)
+
+class IonFractionCollection:
+    def __init__(self):
+        self.data = []
+        self.n_temp = 0
+        self.n_zeta = 0
+        self.n_nn = 0
+        self.d_temp = 0.0
+        self.d_zeta = 0.0
+        self.d_nn = 0.0
+        self.start_temp = 0.0
+        self.end_temp = 0.0
+        self.start_zeta = 0.0
+        self.end_zeta = 0.0
+        self.start_nn = 0.0
+        self.end_nn = 0.0
+        self.temp_array = []
+        self.zeta_array = []
+        self.nn_array = []
+
+    def loadIonData(self):
+        loadedData = pickle.load(open("diff_results.p", "rb"))
+        [self.temp_array.append(x.t) for x in loadedData]
+        [self.zeta_array.append(x.zeta) for x in loadedData]
+        [self.nn_array.append(x.nn) for x in loadedData]
+        self.temp_array = np.array(sorted(list(set(self.temp_array))))
+        self.zeta_array = np.array(sorted(list(set(self.zeta_array))))
+        self.nn_array = np.array(sorted(list(set(self.nn_array))))
+
+        self.data = np.zeros([20,20,20])
+        for element in loadedData:
+            i_t = np.where(self.temp_array == element.t)[0][0]
+            i_zeta = np.where(self.zeta_array == element.zeta)[0][0]
+            i_nn = np.where(self.nn_array == element.nn)[0][0]
+            self.data[i_t][i_zeta][i_nn] = element.xe
+
+        self.temp_array = np.log10(self.temp_array)
+        self.zeta_array = np.log10(self.zeta_array)
+        self.nn_array = np.log10(self.nn_array)
+        self.n_temp = len(self.temp_array)
+        self.n_zeta = len(self.zeta_array)
+        self.n_nn = len(self.nn_array)
+        self.d_temp = self.temp_array[1] - self.temp_array[0]
+        self.d_zeta = self.zeta_array[1] - self.zeta_array[0]
+        self.d_nn = self.nn_array[1] - self.nn_array[0]
+        self.start_temp = self.temp_array[0]
+        self.end_temp = self.temp_array[-1]
+        self.start_zeta = self.zeta_array[0]
+        self.end_zeta = self.zeta_array[-1]
+        self.start_nn = self.nn_array[0]
+        self.end_nn = self.nn_array[-1]
+
+    def getIndicesForTempValue(self, x):
+        l, r = 0, 0
+        x = x - self.start_temp
+
+        if x <= 0.0:
+            l = 0
+            r = 0
+        elif x >= self.end_temp - self.start_temp:
+            l = self.n_temp-1
+            r = self.n_temp-1
+        else:
+            index = x / self.d_temp
+            l = int(np.floor(index))
+            r = int(np.ceil(index))
+
+        return l, r
+
+    def getIndicesForZetaValue(self, x):
+        l, r = 0, 0
+        x = x - self.start_zeta
+
+        if x <= 0.0:
+            l = 0
+            r = 0
+        elif x >= self.end_zeta - self.start_zeta:
+            l = self.n_zeta-1
+            r = self.n_zeta-1
+        else:
+            index = x / self.d_zeta
+            l = int(np.floor(index))
+            r = int(np.ceil(index))
+
+        return l, r
+
+    def getIndicesForNnValue(self, x):
+        l, r = 0, 0
+        x = x - self.start_nn
+
+        if x <= 0.0:
+            l = 0
+            r = 0
+        elif x >= self.end_nn - self.start_nn:
+            l = self.n_nn-1
+            r = self.n_nn-1
+        else:
+            index = x / self.d_nn
+            l = int(np.floor(index))
+            r = int(np.ceil(index))
+
+        return l, r
+
+    def interpolateIonFraction(self, temp, zeta, nn):
+        x = np.log10(temp)
+        y = np.log10(zeta)
+        z = np.log10(nn)
+
+        # Gives the adjacent indices
+        xl, xr = self.getIndicesForTempValue(x)
+        yl, yr = self.getIndicesForZetaValue(y)
+        zl, zr = self.getIndicesForNnValue(z)
+
+
+        # Corresponding values of the three variables
+        x0 = self.temp_array[xl]
+        x1 = self.temp_array[xr]
+        y0 = self.zeta_array[yl]
+        y1 = self.zeta_array[yr]
+        z0 = self.nn_array[zl]
+        z1 = self.nn_array[zr]
+
+        # Computes the scaled difference coordinates between the lattice points
+        x_d = (x - x0) / (x1 - x0)
+        y_d = (y - y0) / (y1 - y0)
+        z_d = (z - z0) / (z1 - z0)
+
+        # Treating the boundary cases
+        if x0 == x1:
+            x_d = 0.0
+
+        if y0 == y1:
+            y_d = 0.0
+
+        if z0 == z1:
+            z_d = 0.0
+
+        # Values of xe on the cube around the interpolation point
+        c000 = self.data[xl][yl][zl]
+        c001 = self.data[xl][yl][zr]
+        c010 = self.data[xl][yr][zl]
+        c011 = self.data[xl][yr][zr]
+        c100 = self.data[xr][yl][zl]
+        c101 = self.data[xr][yl][zr]
+        c110 = self.data[xr][yr][zl]
+        c111 = self.data[xr][yr][zr]
+
+        # Interpolation along the temperature axis
+        c00 = c000 * (1.0 - x_d) + c100 * x_d
+        c01 = c001 * (1.0 - x_d) + c101 * x_d
+        c10 = c010 * (1.0 - x_d) + c110 * x_d
+        c11 = c011 * (1.0 - x_d) + c111 * x_d
+
+        # Interpolation along the zeta axis
+        c0 = c00 * (1.0 - y_d) + c10 * y_d
+        c1 = c01 * (1.0 - y_d) + c11 * y_d
+
+        # Interpolation along the nn axis
+        c = c0 * (1.0 - z_d) + c1 * z_d
+
+        return c
+
 
 
 class Compute:
@@ -44,10 +217,33 @@ class Compute:
         return self.data.variables["prs"] / self.data.variables["rho"] * kelvin * mu
 
     def computeElsasserNumbers(self, radius):
-        x_range = [0.0, 60.0, 1000]
-        y_range = [-60.0, 60.0, 1000]
+
+        collection = IonFractionCollection()
+        collection.loadIonData()
+
+        rho = self.data.variables["rho"] * self.data.unitNumberDensity
+        r, th = np.meshgrid(self.data.x1, self.data.x2)
+        dr, dth = np.meshgrid(self.data.dx1, self.data.dx2)
+        rho_w = rho * dr * self.data.unitLength
+        rho_column = np.copy(rho_w)
+        for i in range(rho_w.shape[0]):
+            for j in range(len(rho_w[i])):
+                subc = np.sum(rho_w[i][:j])
+                rho_column[i, j] = subc
+
+        tau = np.exp(-rho_column * 2e-22)
+        crossSection = 8.5e-23 * np.power(2.0, -2.81);
+        absCoefficient = 0.686 * np.power(tau, -0.606) * np.exp(-1.778 * np.power(tau, -0.262));
+        de = 37;
+        xlum = 2.0e30 * 6.242e11
+        xrayEnergy = 2e3
+        zeta = 0.5 * xlum / (4.0 * np.pi * (r*self.data.unitLength)**2 * xrayEnergy) * crossSection * xrayEnergy / de * absCoefficient
+        mask = np.isnan(zeta)
+        zeta[mask] = 1e-18
+
+        x_range = [0.0, 5.0, 2000]
+        y_range = [-6.0, 6.0, 2000]
         temp = self.computeTemperature()
-        rho = self.data.variables["rho"] * self.data.unitDensity
         bx1 = self.data.variables["bx1"] * self.data.unitMagneticFluxDensity
         bx2 = self.data.variables["bx2"] * self.data.unitMagneticFluxDensity
         #bx3 = self.data.variables["bx3"] * self.data.unitMagneticFluxDensity
@@ -58,17 +254,28 @@ class Compute:
         x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, bx1, x_range, y_range)
         x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, bx2, x_range, y_range)
          #x, y, bx3 = Interpolate.interpolateToUniformGrid(self.data, bx3, x_range, y_range)
+        x, y, zeta = Interpolate.interpolateToUniformGrid(self.data, zeta, x_range, y_range)
 
-        yy = 0.0
-        rho_i = Interpolate.interpolatePoint2D(x_range, y_range, rho, (radius, yy))
-        temp_i = Interpolate.interpolatePoint2D(x_range, y_range, temp, (radius, yy))
-        bz_i = Interpolate.interpolatePoint2D(x_range, y_range, bx2, (radius, yy))
-        H = self.pressureScaleHeightRadius(radius, temp_i)
-        eta_ohm = 1.268206e+17
-        v_a = bz_i / np.sqrt(rho_i)
-        omega = np.sqrt(self.data.G * self.data.solarMass / (radius * self.data.unitLength)**3)
-        elsasser_ohm = v_a**2 / (omega * eta_ohm)
-        return elsasser_ohm
+        temp_H = Interpolate.interpolatePoint2D(x_range, y_range, temp, (radius, 0.0))
+        H = self.pressureScaleHeightRadius(radius, temp_H)
+        yy = np.linspace(-10*H, 10*H, 1000)
+        e_numbers = []
+        for i in yy:
+            rho_i = Interpolate.interpolatePoint2D(x_range, y_range, rho, (radius, i))
+            temp_i = Interpolate.interpolatePoint2D(x_range, y_range, temp, (radius, i))
+            bz_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, bx2, (radius, i)))
+            zeta_i = Interpolate.interpolatePoint2D(x_range, y_range, zeta, (radius, i))
+
+            #print(i, rho_i, temp_i, bz_i, zeta_i)
+
+            xe = collection.interpolateIonFraction(temp_i, zeta_i, rho_i)
+            eta_ohm = 230.0 / xe * np.sqrt(temp_i);
+            # eta_ohm = 1.268206e+17
+            v_a = bz_i / np.sqrt(rho_i / self.data.unitNumberDensity * self.data.unitDensity)
+            omega = np.sqrt(self.data.G * self.data.solarMass / (radius * self.data.unitLength)**3)
+            elsasser_ohm = v_a**2 / (omega * eta_ohm)
+            e_numbers.append(elsasser_ohm)
+        return yy/H, np.array(e_numbers)
 
     def computeTotalMass(self, data):
         rho = self.data.variables["rho"]
