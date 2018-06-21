@@ -196,9 +196,15 @@ class Compute:
     def computeMachNumbers(self):
         vabs = self.computeAbsoluteVelocities() * self.data.unitVelocity
         temp = self.computeTemperature()
-        cs = np.sqrt(self.data.kb * temp / (self.data.mu * self.data.mp))
+        cs = np.sqrt(5.0/3.0 * self.data.kb * temp / (self.data.mu * self.data.mp))
         mach = vabs / cs
         return mach
+
+    def computeAlfvenMachNumbers(self):
+        vabs = self.computeAbsoluteVelocities()
+        B = np.sqrt(self.data.variables["bx1"]**2 + self.data.variables["bx2"]**2)
+        va = B / np.sqrt(self.data.variables["rho"])
+        return vabs / va
 
     def computeSonicPoints(self):
         mach = self.computeMachNumbers()
