@@ -1,4 +1,5 @@
 import numpy as np
+import yt
 import scipy
 import matplotlib.pyplot as plt
 from matplotlib import rc, rcParams, warnings
@@ -136,6 +137,66 @@ class Plotter:
         plt.streamplot(x, y, vx1, vx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
         return plt
+
+    def plotVelocityLIC(self, variable=None, cmap=cm.inferno):
+        self.interpolate = True
+        # if variable is not None:
+        #     self.plotVariable(variable, cmap=cmap)
+        # else:
+        #     self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
+
+        t = Transform(self.data)
+        vx1, vx2 = t.transformVelocityFieldToCylindrical()
+        x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, self.xrange, self.yrange)
+        x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, self.xrange, self.yrange)
+        vx = np.transpose(np.sqrt(vx1**2 + vx2**2))
+        vx1 = np.transpose(vx1)
+        vx2 = np.transpose(vx2)
+
+        data = dict()
+        data["velocity_x"] = vx1[..., None]
+        data["velocity_y"] = vx2[..., None]
+        data["velocity_abs"] = vx[..., None]
+        bbox = np.array([[np.min(x), np.max(x)],
+                         [np.min(y), np.max(y)],
+                         [0.0, 1.0]])
+        ds = yt.load_uniform_grid(data, data["velocity_x"].shape, bbox=bbox, nprocs=4, length_unit=(1.0,"AU"))
+        s = yt.SlicePlot(ds, 'z', 'velocity_abs', origin='left-window')
+        s.set_buff_size((2000, 2000))
+        s.set_cmap('all', cm.inferno)
+        s.annotate_line_integral_convolution('velocity_x', 'velocity_y', lim=(0.46,0.54), cmap=cm.coolwarm, kernellen=500, alpha=1.0, const_alpha=True)
+        s.save("test1", mpl_kwargs={'dpi': 250})
+
+    def plotMagneticFieldLIC(self, variable=None, cmap=cm.inferno):
+        self.interpolate = True
+        # if variable is not None:
+        #     self.plotVariable(variable, cmap=cmap)
+        # else:
+        #     self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
+
+        t = Transform(self.data)
+        vx1, vx2 = t.transformMagneticFieldToCylindrical()
+        x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, self.xrange, self.yrange)
+        x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, self.xrange, self.yrange)
+        vx = np.transpose(np.sqrt(vx1**2 + vx2**2))
+        vx1 = np.transpose(vx1)
+        vx2 = np.transpose(vx2)
+
+        data = dict()
+        data["magnetic_field_x"] = vx1[..., None]
+        data["magnetic_field_y"] = vx2[..., None]
+        data["magnetic_field_strength"] = vx[..., None]
+        bbox = np.array([[np.min(x), np.max(x)],
+                         [np.min(y), np.max(y)],
+                         [0.0, 1.0]])
+        ds = yt.load_uniform_grid(data, data["magnetic_field_x"].shape, bbox=bbox, nprocs=4, length_unit=(1.0,"AU"))
+        s = yt.SlicePlot(ds, 'z', 'magnetic_field_strength', origin='left-window')
+        s.set_buff_size((2000, 2000))
+        s.set_cmap('all', cm.inferno)
+        s.annotate_line_integral_convolution('magnetic_field_x', 'magnetic_field_y', lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
+        s.save("test1", mpl_kwargs={'dpi': 250})
+
+
 
     def plotMagneticFieldLines(self, density=3, variable=None, cmap=cm.inferno):
         self.interpolate = True
