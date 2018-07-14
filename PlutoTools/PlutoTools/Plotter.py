@@ -164,7 +164,7 @@ class Plotter:
         s = yt.SlicePlot(ds, 'z', 'velocity_abs', origin='left-window')
         s.set_buff_size((2000, 2000))
         s.set_cmap('all', cm.inferno)
-        s.annotate_line_integral_convolution('velocity_x', 'velocity_y', lim=(0.46,0.54), cmap=cm.coolwarm, kernellen=500, alpha=1.0, const_alpha=True)
+        s.annotate_line_integral_convolution('velocity_x', 'velocity_y', lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
         s.save("test1", mpl_kwargs={'dpi': 250})
 
     def plotMagneticFieldLIC(self, variable=None, cmap=cm.inferno):
