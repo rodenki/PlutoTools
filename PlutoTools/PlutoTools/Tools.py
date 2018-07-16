@@ -419,11 +419,13 @@ class Compute:
         times = []
         for file in os.listdir(path):
             if file.endswith(".h5"):
-                data = Data(os.path.join(path, file))
-                loss = self.computeMassLoss(data)
-                times.append(float(data.time) * data.unitTimeYears)
-                losses.append(loss)
-                print("Massflux for " + file + ": " + str(loss))
+                frameIndex = int(file.split('.')[1])
+                if frameIndex > 700:
+                    data = Data(os.path.join(path, file))
+                    loss = self.computeMassLoss(data)
+                    times.append(float(data.time) * data.unitTimeYears)
+                    losses.append(loss)
+                    print("Massflux for " + file + ": " + str(loss))
         return losses, times
 
     def plotMassLosses(self, path, filename="losses.eps"):

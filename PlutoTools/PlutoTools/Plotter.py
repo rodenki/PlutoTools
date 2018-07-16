@@ -68,11 +68,11 @@ class Plotter:
     def show(self):
         plt.show()
 
-    def savefig(self, filename=None):
+    def savefig(self, filename=None, dpi=300):
         if filename == None:
-            plt.savefig(self.filename + ".png", dpi=300)
+            plt.savefig(self.filename + ".png", dpi=dpi)
         else:
-            plt.savefig(filename, dpi=300)
+            plt.savefig(filename, dpi=dpi)
 
     def clear(self):
         plt.cla()
@@ -82,7 +82,8 @@ class Plotter:
         #self.data.x2 = self.data.x2[:450]
         t = Transform(self.data)
         x, y = t.polarCoordsToCartesian()
-        plt.figure(figsize=self.figsize)
+        fig = plt.figure(figsize=self.figsize)
+        cb = None
 
         if self.interpolate:
             x, y, variable = Interpolate.interpolateToUniformGrid(self.data, variable, self.xrange, self.yrange)
@@ -92,7 +93,7 @@ class Plotter:
                 plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=self.vlimits[0], vmax=self.vlimits[1]), cmap=cmap)
             else:
                 plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=np.nanmin(variable), vmax=np.nanmax(variable)), cmap=cmap)
-            cb = plt.colorbar()
+            cb = plt.colorbar(pad=0)
             tick_locator = ticker.LogLocator(numdecs=10)
             cb.locator = tick_locator
             cb.update_ticks()
@@ -101,7 +102,7 @@ class Plotter:
                 plt.pcolormesh(x, y, variable, vmin=self.vlimits[0], vmax=self.vlimits[1], cmap=cmap)
             else:
                 plt.pcolormesh(x, y, variable, cmap=cmap)
-            cb = plt.colorbar()
+            cb = plt.colorbar(pad=0)
 
         plt.xlabel('Radius [AU]')
         plt.ylabel('z [AU]')
@@ -109,7 +110,8 @@ class Plotter:
         plt.ylim(*self.yrange)
         orbits = self.data.orbits(self.orbitalDistance, self.data.time)
         plt.title(self.title + " t = " + str(self.data.time) + ", " + str(int(orbits)) + " orbits")
-        return plt
+        ax = plt.gca()
+        return plt, cb, ax
 
     def plotLineData(self, x, y):
         newTicks = np.linspace(np.min(x), np.max(x), self.xrange[2])
@@ -120,10 +122,11 @@ class Plotter:
 
     def plotVelocityFieldLines(self, density=3, variable=None, cmap=cm.inferno):
         self.interpolate = True
+        cb = None
         if variable is not None:
-            self.plotVariable(variable, cmap=cmap)
+            plt, cb, ax = self.plotVariable(variable, cmap=cmap)
         else:
-            self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
+            plt, cb, ax = self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
 
         t = Transform(self.data)
         vx1, vx2 = t.transformVelocityFieldToCylindrical()
@@ -136,7 +139,7 @@ class Plotter:
 
         plt.streamplot(x, y, vx1, vx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
-        return plt
+        return plt, cb, ax
 
     def plotVelocityLIC(self, variable=None, cmap=cm.inferno):
         self.interpolate = True
@@ -200,10 +203,11 @@ class Plotter:
 
     def plotMagneticFieldLines(self, density=3, variable=None, cmap=cm.inferno):
         self.interpolate = True
+        cb = None
         if variable is not None:
-            self.plotVariable(variable, cmap=cmap)
+            plt, cb, ax = self.plotVariable(variable, cmap=cmap)
         else:
-            self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
+            plt, cb, ax = self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
 
         t = Transform(self.data)
         bx1, bx2 = t.transformMagneticFieldToCylindrical()
@@ -216,7 +220,7 @@ class Plotter:
 
         plt.streamplot(x, y, bx1, bx2, density=density, arrowstyle='->', linewidth=1,
                        arrowsize=1.5)
-        return plt
+        return plt, cb, ax
 
     def plotMagneticField(self, scale=40, width=0.001):
 
