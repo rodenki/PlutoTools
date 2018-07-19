@@ -407,20 +407,20 @@ class Compute:
         rho = data.variables["rho"][:,computeLimit] * data.unitDensity
         vx1 = data.variables["vx1"][:,computeLimit] * data.unitVelocity
         temp = self.computeTemperature()[:,computeLimit]
-        tempRange = [i for i,v in enumerate(temp) if v > 1000 and vx1[i] > 0]
-        tempRange = range(min(tempRange), max(tempRange))
+        tempRange = [i for i,v in enumerate(temp) if v > 100 and vx1[i] > 0]
+        #tempRange = range(min(tempRange), max(tempRange))
         surface = 0.5*np.pi / len(data.x2) * data.x1[computeLimit]**2 * 2.0 * np.pi * data.unitLength**2
         massLoss = surface * rho[tempRange] * vx1[tempRange] * data.year / data.solarMass
         totalMassLoss = np.sum(massLoss)
         return totalMassLoss
 
-    def computeMassLosses(self, path):
+    def computeMassLosses(self, path, frameRange):
         losses = []
         times = []
         for file in os.listdir(path):
             if file.endswith(".h5"):
                 frameIndex = int(file.split('.')[1])
-                if frameIndex > 700:
+                if frameIndex in frameRange:
                     data = Data(os.path.join(path, file))
                     loss = self.computeMassLoss(data)
                     times.append(float(data.time) * data.unitTimeYears)
