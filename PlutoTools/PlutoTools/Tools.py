@@ -356,6 +356,86 @@ class Compute:
         potential = 0.0
         return solver.y[0], potential
 
+    def getStreamline(self, startingPoint, stopRadius, x_range, y_range):
+
+        trans = Transform(self.data)
+
+        x, y = trans.polarCoordsToCartesian()
+        vx1, vx2 = trans.transformVelocityFieldToCylindrical()
+        magneticFieldAvailable = True
+        try:
+            bx1, bx2 = trans.transformMagneticFieldToCylindrical()
+        except KeyError:
+            magneticFieldAvailable = False
+
+        x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, x_range, y_range)
+        x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, x_range, y_range)
+        bx1 = 0
+        bx2 = 0
+        bx3 = 0
+        if magneticFieldAvailable:
+            x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, bx1, x_range, y_range)
+            x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, bx2, x_range, y_range)
+            x, y, bx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["bx3"], x_range, y_range)
+        x, y, vx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["vx3"], x_range, y_range)
+        x, y, rho = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["rho"], x_range, y_range)
+        x, y, prs = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["prs"], x_range, y_range)
+
+
+        p0 = startingPoint
+        t0 = 0.0
+        t1 = 1000
+        solver = scipy.integrate.ode(Interpolate.singlePointInterpolation)
+        solver.set_integrator("vode", rtol=1e-10)
+        solver.set_f_params(vx1, vx2, x_range, y_range)
+        solver.set_initial_value(p0, t0)
+
+        vabs = np.sqrt(vx1**2 + vx2**2)
+        step = 0
+
+        result = dict()
+        result['x'] = []
+        result['y'] = []
+        result['rho'] = []
+        result['prs'] = []
+        result['vx1'] = []
+        result['vx2'] = []
+        result['vx3'] = []
+        if magneticFieldAvailable:
+            result['bx1'] = []
+            result['bx2'] = []
+            result['bx3'] = []
+
+        while solver.t < t1 and solver.y[0]**2 + solver.y[1]**2 < stopRadius**2:
+            solver.integrate(t1, step=True)
+            x1 = solver.y[0]
+            x2 = solver.y[1]
+            rho_i = Interpolate.interpolatePoint2D(x_range, y_range, rho, (x1, x2))
+            prs_i = Interpolate.interpolatePoint2D(x_range, y_range, prs, (x1, x2))
+            if magneticFieldAvailable:
+                bx1_i = Interpolate.interpolatePoint2D(x_range, y_range, bx1, (x1, x2))
+                bx2_i = Interpolate.interpolatePoint2D(x_range, y_range, bx2, (x1, x2))
+                bx3_i = Interpolate.interpolatePoint2D(x_range, y_range, bx3, (x1, x2))
+            vx1_i = Interpolate.interpolatePoint2D(x_range, y_range, vx1, (x1, x2))
+            vx2_i = Interpolate.interpolatePoint2D(x_range, y_range, vx2, (x1, x2))
+            vx3_i = Interpolate.interpolatePoint2D(x_range, y_range, vx3, (x1, x2))
+            if (step % 100) == 0:
+                print(step, x1, x2, rho_i, prs_i)
+            result['x'].append(x1)
+            result['y'].append(x2)
+            result['rho'].append(rho_i[0])
+            result['prs'].append(prs_i[0])
+            result['vx1'].append(vx1_i[0])
+            result['vx2'].append(vx2_i[0])
+            result['vx3'].append(vx3_i[0])
+            if magneticFieldAvailable:
+                result['bx1'].append(bx1_i[0])
+                result['bx2'].append(bx2_i[0])
+                result['bx3'].append(bx3_i[0])
+            step += 1
+
+        return result
+
     def computeRadialMassLosses(self, resolution=1000, limit=4e-4, start=100):
         computeLimit = int(len(self.data.dx1) * 0.99)
         rho = self.data.variables["rho"][:,computeLimit] * self.data.unitDensity
