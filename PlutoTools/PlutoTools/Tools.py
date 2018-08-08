@@ -187,8 +187,9 @@ class IonFractionCollection:
 
 class Compute:
 
-    def __init__(self, data):
+    def __init__(self, data, verbosity=0):
         self.data = data
+        self.verbosity = verbosity
 
     def computeAbsoluteVelocities(self):
         return np.sqrt(self.data.variables["vx1"]**2 + self.data.variables["vx2"]**2)
@@ -505,8 +506,9 @@ class Compute:
                     loss = self.computeMassLoss(data)
                     times.append(float(data.time) * data.unitTimeYears)
                     losses.append(loss)
-                    print("Massflux for " + file + ": " + str(loss))
-        return losses, times
+                    if self.verbosity > 0:
+                        print("Massflux for " + file + ": " + str(loss))
+        return np.array(losses), np.array(times)
 
     def plotMassLosses(self, path, filename="losses.eps"):
         losses, times = self.computeMassLosses(path)
@@ -533,7 +535,8 @@ class Compute:
             if filename.endswith(".h5"):
                 frameIndex = int(filename.split('.')[1])
                 if frameIndex in frameRange:
-                    print("Averaging " + str(variable) + " frame: " + str(frameIndex))
+                    if self.verbosity > 0:
+                        print("Averaging " + str(variable) + " frame: " + str(frameIndex))
                     data = Data(os.path.join(path, filename))
                     frames.append(data.variables[variable])
         frames = np.array(frames)

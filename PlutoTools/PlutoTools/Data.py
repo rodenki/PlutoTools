@@ -33,6 +33,18 @@ class Data:
             print(e)
             return None
 
+    @classmethod
+    def fromFrameNumeric(cls, frame, prefix=""):
+        try:
+            cls.prefix = prefix
+            frame = format(frame, "04d")
+            path = cls.prefix + "data." + frame + ".dbl.h5"
+            return cls(path)
+
+        except OSError as e:
+            print("Error while reading path. Description:")
+            print(e)
+            return None
 
     def initialize(self):
         self.filename = ""
