@@ -141,7 +141,7 @@ class Plotter:
                        arrowsize=1.5)
         return plt, cb, ax
 
-    def plotVelocityLIC(self, variable=None, cmap=cm.inferno):
+    def plotVelocityLIC(self, variable=None, cmap=cm.inferno, filename="test"):
         self.interpolate = True
         # if variable is not None:
         #     self.plotVariable(variable, cmap=cmap)
@@ -152,7 +152,7 @@ class Plotter:
         vx1, vx2 = t.transformVelocityFieldToCylindrical()
         x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, self.xrange, self.yrange)
         x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, self.xrange, self.yrange)
-        vx = np.transpose(np.sqrt(vx1**2 + vx2**2))
+        vx = np.transpose(np.sqrt(vx1**2 + vx2**2)) * self.data.unitVelocity
         vx1 = np.transpose(vx1)
         vx2 = np.transpose(vx2)
 
@@ -168,9 +168,9 @@ class Plotter:
         s.set_buff_size((2000, 2000))
         s.set_cmap('all', cm.inferno)
         s.annotate_line_integral_convolution('velocity_x', 'velocity_y', lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
-        s.save("test1", mpl_kwargs={'dpi': 250})
+        s.save(filename, mpl_kwargs={'dpi': 250})
 
-    def plotMagneticFieldLIC(self, variable=None, cmap=cm.inferno):
+    def plotMagneticFieldLIC(self, variable=None, cmap=cm.inferno, filename="test"):
         self.interpolate = True
         # if variable is not None:
         #     self.plotVariable(variable, cmap=cmap)
@@ -181,7 +181,7 @@ class Plotter:
         vx1, vx2 = t.transformMagneticFieldToCylindrical()
         x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, self.xrange, self.yrange)
         x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, self.xrange, self.yrange)
-        vx = np.transpose(np.sqrt(vx1**2 + vx2**2))
+        vx = np.transpose(np.sqrt(vx1**2 + vx2**2)) * self.data.unitMagneticFluxDensity
         vx1 = np.transpose(vx1)
         vx2 = np.transpose(vx2)
 
@@ -197,7 +197,7 @@ class Plotter:
         s.set_buff_size((2000, 2000))
         s.set_cmap('all', cm.inferno)
         s.annotate_line_integral_convolution('magnetic_field_x', 'magnetic_field_y', lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
-        s.save("test1", mpl_kwargs={'dpi': 250})
+        s.save(filename, mpl_kwargs={'dpi': 250})
 
 
 
