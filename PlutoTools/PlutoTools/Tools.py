@@ -237,14 +237,14 @@ class Compute:
         yy = np.linspace(-10*H, 10*H, 1000)
         betas = []
         for i in yy:
-            bx1_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, bx1, (radius, i)))
-            bx2_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, bx2, (radius, i)))
-            bx3_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, bx3, (radius, i)))
-            prs_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, prs, (radius, i)))
-            b2 = bx1**2 + bx2**2 + bx3**2
+            bx1_i = Interpolate.interpolatePoint2D(x_range, y_range, bx1, (radius, i))
+            bx2_i = Interpolate.interpolatePoint2D(x_range, y_range, bx2, (radius, i))
+            bx3_i = Interpolate.interpolatePoint2D(x_range, y_range, bx3, (radius, i))
+            prs_i = Interpolate.interpolatePoint2D(x_range, y_range, prs, (radius, i))
+            b2 = bx1_i**2 + bx2_i**2 + bx3_i**2
             beta = 8.0*np.pi * prs_i / b2
-            betas.append(beta)
-        return yy/H, np.array(beta)
+            betas.append(beta[0])
+        return yy/H, np.array(betas)
 
     def computeIonizationStructure(self):
         collection = IonFractionCollection()
