@@ -223,7 +223,62 @@ class Compute:
         mu = 1.37125
         return self.data.variables["prs"] / self.data.variables["rho"] * kelvin * mu
 
-    def computeElsasserNumbers(self, radius):
+    def computePlasmaBeta(self, radius, H, x_range, y_range):
+        prs = self.data.variables["prs"] * self.data.unitPressure
+        bx1 = self.data.variables["bx1"] * self.data.unitMagneticFluxDensity
+        bx2 = self.data.variables["bx2"] * self.data.unitMagneticFluxDensity
+        bx3 = self.data.variables["bx3"] * self.data.unitMagneticFluxDensity
+
+        x, y, prs = Interpolate.interpolateToUniformGrid(self.data, prs, x_range, y_range)
+        x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, bx1, x_range, y_range)
+        x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, bx2, x_range, y_range)
+        x, y, bx3 = Interpolate.interpolateToUniformGrid(self.data, bx3, x_range, y_range)
+
+        yy = np.linspace(-10*H, 10*H, 1000)
+        betas = []
+        for i in yy:
+            bx1_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, bx1, (radius, i)))
+            bx2_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, bx2, (radius, i)))
+            bx3_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, bx3, (radius, i)))
+            prs_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, prs, (radius, i)))
+            b2 = bx1**2 + bx2**2 + bx3**2
+            beta = 8.0*np.pi * prs_i / b2
+            betas.append(beta)
+        return yy/H, np.array(beta)
+
+    def computeIonizationStructure(self):
+        collection = IonFractionCollection()
+        collection.loadIonData()
+
+        rho = self.data.variables["rho"] * self.data.unitNumberDensity
+        r, th = np.meshgrid(self.data.x1, self.data.x2)
+        dr, dth = np.meshgrid(self.data.dx1, self.data.dx2)
+        rho_w = rho * dr * self.data.unitLength
+        rho_column = np.copy(rho_w)
+        for i in range(rho_w.shape[0]):
+            for j in range(len(rho_w[i])):
+                subc = np.sum(rho_w[i][:j])
+                rho_column[i, j] = subc
+
+        tau = np.exp(-rho_column * 2e-22)
+        crossSection = 8.5e-23 * np.power(2.0, -2.81);
+        absCoefficient = 0.686 * np.power(tau, -0.606) * np.exp(-1.778 * np.power(tau, -0.262));
+        de = 37;
+        xlum = 2.0e30 * 6.242e11
+        xrayEnergy = 2e3
+        zeta = 0.5 * xlum / (4.0 * np.pi * (r*self.data.unitLength)**2 * xrayEnergy) * crossSection * xrayEnergy / de * absCoefficient
+        mask = np.isnan(zeta)
+        zeta[mask] = 1e-18
+
+        temp = self.computeTemperature()
+        xe = np.copy(rho)
+        for (i, j), rho_i in np.ndenumerate(rho):
+            xe[i][j] = collection.interpolateIonFraction(temp[i][j], zeta[i][j], rho_i)
+        return xe
+
+
+
+    def computeElsasserNumbers(self, radius, H, x_range, y_range):
 
         collection = IonFractionCollection()
         collection.loadIonData()
@@ -248,8 +303,6 @@ class Compute:
         mask = np.isnan(zeta)
         zeta[mask] = 1e-18
 
-        x_range = [0.0, 5.0, 2000]
-        y_range = [-6.0, 6.0, 2000]
         temp = self.computeTemperature()
         bx1 = self.data.variables["bx1"] * self.data.unitMagneticFluxDensity
         bx2 = self.data.variables["bx2"] * self.data.unitMagneticFluxDensity
@@ -264,7 +317,7 @@ class Compute:
         x, y, zeta = Interpolate.interpolateToUniformGrid(self.data, zeta, x_range, y_range)
 
         temp_H = Interpolate.interpolatePoint2D(x_range, y_range, temp, (radius, 0.0))
-        H = self.pressureScaleHeightRadius(radius, temp_H)
+        #H = self.pressureScaleHeightRadius(radius, temp_H)
         yy = np.linspace(-10*H, 10*H, 1000)
         e_numbers = []
         for i in yy:
@@ -528,6 +581,49 @@ class Compute:
         plt.ylim(5e-9, 2e-8)
         plt.savefig(filename)
 
+    def averageFramesComplete(self, path, frameRange):
+        frames_rho = []
+        frames_prs = []
+        frames_vx1 = []
+        frames_vx2 = []
+        frames_vx3 = []
+        frames_bx1 = []
+        frames_bx2 = []
+        frames_bx3 = []
+
+        for filename in os.listdir(path):
+            if filename.endswith(".h5"):
+                frameIndex = int(filename.split('.')[1])
+                if frameIndex in frameRange:
+                    if self.verbosity > 0:
+                        print("Averaging " + str(variable) + " frame: " + str(frameIndex))
+                    data = Data(os.path.join(path, filename))
+                    frames_rho.append(data.variables["rho"])
+                    frames_prs.append(data.variables["prs"])
+                    frames_vx1.append(data.variables["vx1"])
+                    frames_vx2.append(data.variables["vx2"])
+                    frames_vx3.append(data.variables["vx3"])
+                    frames_bx1.append(data.variables["bx1"])
+                    frames_bx2.append(data.variables["bx2"])
+                    frames_bx3.append(data.variables["bx3"])
+        frames_rho = np.array(frames_rho)
+        frames_prs = np.array(frames_prs)
+        frames_vx1 = np.array(frames_vx1)
+        frames_vx2 = np.array(frames_vx2)
+        frames_vx3 = np.array(frames_vx3)
+        frames_bx1 = np.array(frames_bx1)
+        frames_bx2 = np.array(frames_bx2)
+        frames_bx3 = np.array(frames_bx3)
+        self.data.variables["rho"] = np.mean(frames_rho, axis=0)
+        self.data.variables["prs"] = np.mean(frames_prs, axis=0)
+        self.data.variables["vx1"] = np.mean(frames_vx1, axis=0)
+        self.data.variables["vx2"] = np.mean(frames_vx2, axis=0)
+        self.data.variables["vx3"] = np.mean(frames_vx3, axis=0)
+        self.data.variables["bx1"] = np.mean(frames_bx1, axis=0)
+        self.data.variables["bx2"] = np.mean(frames_bx2, axis=0)
+        self.data.variables["bx3"] = np.mean(frames_bx3, axis=0)
+        return self.data
+
     def averageFrames(self, path, variable, frameRange):
         frames = []
 
@@ -542,6 +638,12 @@ class Compute:
         frames = np.array(frames)
         averaged = np.mean(frames, axis=0)
         return averaged
+
+    def pressureScaleHeightAnalytic(self, radius):
+        temp = 280.0 / np.sqrt(radius)
+        cs = np.sqrt(self.data.kb * temp / (self.data.mu * self.data.mp)) / self.data.unitVelocity
+        omega = np.sqrt(1.0 / radius**3)
+        return cs / omega
 
     def pressureScaleHeightRadius(self, radius, temp):
         cs = np.sqrt(self.data.kb * temp / (self.data.mu * self.data.mp)) / self.data.unitVelocity
