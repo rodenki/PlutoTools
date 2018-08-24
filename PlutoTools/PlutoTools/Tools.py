@@ -488,6 +488,9 @@ class Compute:
                 result['bx3'].append(bx3_i[0])
             step += 1
 
+        for key in result:
+            result[key] = np.array(result[key])
+
         return result
 
     def computeRadialMassLosses(self, resolution=1000, limit=4e-4, start=100):

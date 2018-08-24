@@ -57,7 +57,7 @@ class Data:
         self.unitTimeYears = 1.588e-01
         self.solarMass = 1.989e33
         self.year = 31536000
-        self.mu = 2.34
+        self.mu = 1.37125
         self.kb = 1.3806505e-16
         self.mp = 1.67262171e-24
         self.G = 6.6726e-8
