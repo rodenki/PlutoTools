@@ -428,8 +428,8 @@ class Compute:
         bx2 = 0
         bx3 = 0
         if magneticFieldAvailable:
-            x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, bx1, x_range, y_range)
-            x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, bx2, x_range, y_range)
+            x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["bx1"], x_range, y_range)
+            x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["bx2"], x_range, y_range)
             x, y, bx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["bx3"], x_range, y_range)
         x, y, vx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["vx3"], x_range, y_range)
         x, y, rho = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["rho"], x_range, y_range)
