@@ -416,6 +416,8 @@ class Compute:
 
         x, y = trans.polarCoordsToCartesian()
         vx1, vx2 = trans.transformVelocityFieldToCylindrical()
+        bx1 = 0
+        bx2 = 0
         magneticFieldAvailable = True
         try:
             bx1, bx2 = trans.transformMagneticFieldToCylindrical()
@@ -424,12 +426,11 @@ class Compute:
 
         x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, x_range, y_range)
         x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, x_range, y_range)
-        bx1 = 0
-        bx2 = 0
+
         bx3 = 0
         if magneticFieldAvailable:
-            x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["bx1"], x_range, y_range)
-            x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["bx2"], x_range, y_range)
+            x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, bx1, x_range, y_range)
+            x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, bx2, x_range, y_range)
             x, y, bx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["bx3"], x_range, y_range)
         x, y, vx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["vx3"], x_range, y_range)
         x, y, rho = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["rho"], x_range, y_range)
@@ -438,10 +439,94 @@ class Compute:
 
         p0 = startingPoint
         t0 = 0.0
-        t1 = 1000
+        t1 = 1e5
         solver = scipy.integrate.ode(Interpolate.singlePointInterpolation)
         solver.set_integrator("vode", rtol=1e-10)
         solver.set_f_params(vx1, vx2, x_range, y_range)
+        solver.set_initial_value(p0, t0)
+
+        vabs = np.sqrt(vx1**2 + vx2**2)
+        step = 0
+
+        result = dict()
+        result['x'] = []
+        result['y'] = []
+        result['rho'] = []
+        result['prs'] = []
+        result['vx1'] = []
+        result['vx2'] = []
+        result['vx3'] = []
+        if magneticFieldAvailable:
+            result['bx1'] = []
+            result['bx2'] = []
+            result['bx3'] = []
+
+        while solver.t < t1 and solver.y[0]**2 + solver.y[1]**2 < stopRadius**2:
+            solver.integrate(t1, step=True)
+            x1 = solver.y[0]
+            x2 = solver.y[1]
+            rho_i = Interpolate.interpolatePoint2D(x_range, y_range, rho, (x1, x2))
+            prs_i = Interpolate.interpolatePoint2D(x_range, y_range, prs, (x1, x2))
+            if magneticFieldAvailable:
+                bx1_i = Interpolate.interpolatePoint2D(x_range, y_range, bx1, (x1, x2))
+                bx2_i = Interpolate.interpolatePoint2D(x_range, y_range, bx2, (x1, x2))
+                bx3_i = Interpolate.interpolatePoint2D(x_range, y_range, bx3, (x1, x2))
+            vx1_i = Interpolate.interpolatePoint2D(x_range, y_range, vx1, (x1, x2))
+            vx2_i = Interpolate.interpolatePoint2D(x_range, y_range, vx2, (x1, x2))
+            vx3_i = Interpolate.interpolatePoint2D(x_range, y_range, vx3, (x1, x2))
+            if (step % 100) == 0:
+                print(step, x1, x2, rho_i, prs_i)
+            result['x'].append(x1)
+            result['y'].append(x2)
+            result['rho'].append(rho_i[0])
+            result['prs'].append(prs_i[0])
+            result['vx1'].append(vx1_i[0])
+            result['vx2'].append(vx2_i[0])
+            result['vx3'].append(vx3_i[0])
+            if magneticFieldAvailable:
+                result['bx1'].append(bx1_i[0])
+                result['bx2'].append(bx2_i[0])
+                result['bx3'].append(bx3_i[0])
+            step += 1
+
+        for key in result:
+            result[key] = np.array(result[key])
+
+        return result
+
+    def getStreamlineMagnetic(self, startingPoint, stopRadius, x_range, y_range):
+
+        trans = Transform(self.data)
+
+        x, y = trans.polarCoordsToCartesian()
+        vx1, vx2 = trans.transformVelocityFieldToCylindrical()
+        bx1 = 0
+        bx2 = 0
+        magneticFieldAvailable = True
+        try:
+            bx1, bx2 = trans.transformMagneticFieldToCylindrical()
+        except KeyError:
+            magneticFieldAvailable = False
+
+        x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, x_range, y_range)
+        x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, x_range, y_range)
+
+        bx3 = 0
+        if magneticFieldAvailable:
+            x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, bx1, x_range, y_range)
+            x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, bx2, x_range, y_range)
+            x, y, bx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["bx3"], x_range, y_range)
+        x, y, vx3 = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["vx3"], x_range, y_range)
+        x, y, rho = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["rho"], x_range, y_range)
+        x, y, prs = Interpolate.interpolateToUniformGrid(self.data, self.data.variables["prs"], x_range, y_range)
+
+
+        p0 = startingPoint
+        t0 = 0.0
+        t1 = 1e10
+        solver = scipy.integrate.ode(Interpolate.singlePointInterpolation)
+        solver.set_integrator("vode", rtol=1e-10)
+        solver.set_f_params(bx1, bx2, x_range, y_range)
         solver.set_initial_value(p0, t0)
 
         vabs = np.sqrt(vx1**2 + vx2**2)
@@ -497,14 +582,13 @@ class Compute:
         computeLimit = int(len(self.data.dx1) * 0.99)
         rho = self.data.variables["rho"][:,computeLimit] * self.data.unitDensity
         vx1 = self.data.variables["vx1"][:,computeLimit] * self.data.unitVelocity
-        temp = self.computeTemperature()[:,computeLimit]
-        tempRange = [i for i,v in enumerate(temp) if v > 1000 and vx1[i] > 0]
+        tempRange = [i for i,v in enumerate(rho) if np.abs(self.data.x1[computeLimit] * np.cos(self.data.x2[i])) > 25 and vx1[i] > 0]
         tempRange = range(min(tempRange), max(tempRange))
         r = self.data.x1[computeLimit]
         theta = self.data.x2[tempRange]
 
-        surface = 0.5*np.pi / len(self.data.x2) * r**2 * 2.0 * np.pi * self.data.unitLength**2
-        losses = surface * rho[tempRange] * vx1[tempRange] * self.data.year / self.data.solarMass
+        surface = self.data.dx2 * self.data.x1[computeLimit]**2 * np.abs(np.sin(self.data.x2)) * 2.0 * np.pi * self.data.unitLength**2
+        losses = surface[tempRange] * rho[tempRange] * vx1[tempRange] * self.data.year / self.data.solarMass
         x_start = r * np.sin(theta)
         y_start = r * np.cos(theta)
 
@@ -541,13 +625,14 @@ class Compute:
 
     def computeMassLoss(self, data):
         computeLimit = int(len(data.dx1) * 0.99)
-        rho = data.variables["rho"][:,computeLimit] * data.unitDensity
+        rho = data.variables["rho"][:,computeLimit]# * data.unitDensity
         vx1 = data.variables["vx1"][:,computeLimit] * data.unitVelocity
-        temp = self.computeTemperature()[:,computeLimit]
-        tempRange = [i for i,v in enumerate(temp) if v > 500 and vx1[i] > 0]
+        #tempRange = [i for i,v in enumerate(temp) if v > 500 and vx1[i] > 0]
+        tempRange = [i for i,v in enumerate(rho) if np.abs(data.x1[computeLimit] * np.cos(data.x2[i])) > 30 and vx1[i] > 0]
+        rho *= data.unitDensity
         #tempRange = range(min(tempRange), max(tempRange))
-        surface = 0.5*np.pi / len(data.x2) * data.x1[computeLimit]**2 * 2.0 * np.pi * data.unitLength**2
-        massLoss = surface * rho[tempRange] * vx1[tempRange] * data.year / data.solarMass
+        surface = data.dx2 * data.x1[computeLimit]**2 * np.abs(np.sin(data.x2)) * 2.0 * np.pi * data.unitLength**2
+        massLoss = surface[tempRange] * rho[tempRange] * vx1[tempRange] * data.year / data.solarMass
         totalMassLoss = np.sum(massLoss)
         return totalMassLoss
 
@@ -606,9 +691,12 @@ class Compute:
                     frames_vx1.append(data.variables["vx1"])
                     frames_vx2.append(data.variables["vx2"])
                     frames_vx3.append(data.variables["vx3"])
-                    frames_bx1.append(data.variables["bx1"])
-                    frames_bx2.append(data.variables["bx2"])
-                    frames_bx3.append(data.variables["bx3"])
+                    try:
+                        frames_bx1.append(data.variables["bx1"])
+                        frames_bx2.append(data.variables["bx2"])
+                        frames_bx3.append(data.variables["bx3"])
+                    except KeyError:
+                        pass
         frames_rho = np.array(frames_rho)
         frames_prs = np.array(frames_prs)
         frames_vx1 = np.array(frames_vx1)
@@ -622,9 +710,12 @@ class Compute:
         self.data.variables["vx1"] = np.mean(frames_vx1, axis=0)
         self.data.variables["vx2"] = np.mean(frames_vx2, axis=0)
         self.data.variables["vx3"] = np.mean(frames_vx3, axis=0)
-        self.data.variables["bx1"] = np.mean(frames_bx1, axis=0)
-        self.data.variables["bx2"] = np.mean(frames_bx2, axis=0)
-        self.data.variables["bx3"] = np.mean(frames_bx3, axis=0)
+        try:
+            self.data.variables["bx1"] = np.mean(frames_bx1, axis=0)
+            self.data.variables["bx2"] = np.mean(frames_bx2, axis=0)
+            self.data.variables["bx3"] = np.mean(frames_bx3, axis=0)
+        except KeyError:
+            pass
         return self.data
 
     def averageFrames(self, path, variable, frameRange):
