@@ -636,6 +636,54 @@ class Compute:
         totalMassLoss = np.sum(massLoss)
         return totalMassLoss
 
+    def computeSpaceTimeDataStress(self, path, frameRange):
+        plotData = []
+        times = []
+        for file in os.listdir(path):
+            if file.endswith(".h5"):
+                frameIndex = int(file.split('.')[1])
+                if frameIndex in frameRange:
+                    data = Data(os.path.join(path, file))
+                    t = Transform(data)
+                    bx1, bx2 = t.transformMagneticFieldToCylindrical()
+                    slice_bx1 = bx1[:,134][240:480] * data.unitMagneticFluxDensity
+                    slice_bx2 = bx2[:,134][240:480] * data.unitMagneticFluxDensity
+                    slice_bx3 = data.variables["bx3"][:,134][240:480] * data.unitMagneticFluxDensity
+                    slice_prs = data.variables["prs"][:,134][240:480] * data.unitPressure
+                    M = np.abs(slice_bx1 * slice_bx3) / (4.0 * np.pi)
+                    times.append(float(data.time) * data.unitTimeYears)
+                    plotData.append(M)
+        plotData = np.array(plotData)
+        times = np.array(times)
+        mask = times.argsort()
+        times = times[mask]
+        plotData = plotData[mask]
+        return plotData, times
+
+    def computeSpaceTimeDataBeta(self, path, frameRange):
+        plotData = []
+        times = []
+        for file in os.listdir(path):
+            if file.endswith(".h5"):
+                frameIndex = int(file.split('.')[1])
+                if frameIndex in frameRange:
+                    data = Data(os.path.join(path, file))
+                    t = Transform(data)
+                    bx1, bx2 = t.transformMagneticFieldToCylindrical()
+                    slice_bx1 = bx1[:,134][240:480] * data.unitMagneticFluxDensity
+                    slice_bx2 = bx2[:,134][240:480] * data.unitMagneticFluxDensity
+                    slice_bx3 = data.variables["bx3"][:,134][240:480] * data.unitMagneticFluxDensity
+                    slice_prs = data.variables["prs"][:,134][240:480] * data.unitPressure
+                    M = 8.0 * np.pi * slice_prs / (slice_bx1**2 + slice_bx2**2 + slice_bx3**2)
+                    times.append(float(data.time) * data.unitTimeYears)
+                    plotData.append(M)
+        plotData = np.array(plotData)
+        times = np.array(times)
+        mask = times.argsort()
+        times = times[mask]
+        plotData = plotData[mask]
+        return plotData, times
+
     def computeMassLosses(self, path, frameRange):
         losses = []
         times = []

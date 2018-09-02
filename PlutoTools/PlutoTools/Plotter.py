@@ -159,18 +159,18 @@ class Plotter:
         data = dict()
         data["velocity_x"] = vx1[..., None]
         data["velocity_y"] = vx2[..., None]
-        data["velocity_abs"] = vx[..., None]
+        data["absolute_velocity"] = vx[..., None]
         bbox = np.array([[np.min(x), np.max(x)],
                          [np.min(y), np.max(y)],
                          [0.0, 1.0]])
         ds = yt.load_uniform_grid(data, data["velocity_x"].shape, bbox=bbox, nprocs=4, length_unit=(1.0,"AU"))
-        s = yt.SlicePlot(ds, 'z', 'velocity_abs', origin='left-window')
+        s = yt.SlicePlot(ds, 'z', 'absolute_velocity', origin='left-window')
         s.set_buff_size((2000, 2000))
         s.set_cmap('all', cm.inferno)
         s.annotate_line_integral_convolution('velocity_x', 'velocity_y', lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
         s.save(filename, mpl_kwargs={'dpi': 250})
 
-    def plotMagneticFieldLIC(self, variable=None, cmap=cm.inferno, filename="test"):
+    def plotMagneticFieldLIC(self, variable=None, cmap=cm.inferno, filename="test", cmaplabel=""):
         self.interpolate = True
         # if variable is not None:
         #     self.plotVariable(variable, cmap=cmap)
