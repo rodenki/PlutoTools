@@ -684,6 +684,24 @@ class Compute:
         plotData = plotData[mask]
         return plotData, times
 
+    def computeSpaceTimeDataBphi(self, path, frameRange):
+        plotData = []
+        times = []
+        for file in os.listdir(path):
+            if file.endswith(".h5"):
+                frameIndex = int(file.split('.')[1])
+                if frameIndex in frameRange:
+                    data = Data(os.path.join(path, file))
+                    slice_bx3 = data.variables["bx3"][:,134][240:480] * data.unitMagneticFluxDensity
+                    times.append(float(data.time) * data.unitTimeYears)
+                    plotData.append(slice_bx3)
+        plotData = np.array(plotData)
+        times = np.array(times)
+        mask = times.argsort()
+        times = times[mask]
+        plotData = plotData[mask]
+        return plotData, times
+
     def computeMassLosses(self, path, frameRange):
         losses = []
         times = []
