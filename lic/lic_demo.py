@@ -5,7 +5,7 @@ import lic_internal
 
 dpi = 100
 size = 700
-video = True
+video = False
 
 vortex_spacing = 0.5
 extra_factor = 2.
@@ -27,6 +27,8 @@ for (x,y) in vortices:
     vectors[...,1] += -(xs-x)/rsq
 
 texture = np.random.rand(size,size).astype(np.float32)
+
+print(vectors[0])
 
 plt.bone()
 frame=0
@@ -57,4 +59,4 @@ else:
     plt.axis('off')
     plt.figimage(image)
     plt.gcf().set_size_inches((size/float(dpi),size/float(dpi)))
-    plt.savefig("flow-image.png",dpi=dpi)
+    #plt.savefig("flow-image.png",dpi=dpi)
