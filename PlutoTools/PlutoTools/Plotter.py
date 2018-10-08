@@ -150,64 +150,42 @@ class Plotter:
         image = lic_internal.line_integral_convolution(vecField, texture, kernel)
         return image
 
-    def plotVelocityLIC(self, variable=None, cmap=cm.inferno, filename="test"):
+    def plotLIC(self, variable=None, cmap=cm.inferno, filename="test", dpi=250,
+                buffSize=(2000, 2000), field="velocity"):
         self.interpolate = True
-        # if variable is not None:
-        #     self.plotVariable(variable, cmap=cmap)
-        # else:
-        #     self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
 
         t = Transform(self.data)
-        vx1, vx2 = t.transformVelocityFieldToCylindrical()
+        vx1, vx2 = None, None
+        if field == "velocity":
+            vx1, vx2 = t.transformVelocityFieldToCylindrical()
+        else:
+            vx1, vx2 = t.transformMagneticFieldToCylindrical()
+
         x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, self.xrange, self.yrange)
         x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, self.xrange, self.yrange)
-        vx = np.transpose(np.sqrt(vx1**2 + vx2**2)) * self.data.unitVelocity
+
+        vx = np.transpose(np.sqrt(vx1**2 + vx2**2))
+        if field == "velocity":
+            vx *= self.data.unitVelocity
+        else:
+            vx *= self.data.unitMagneticFluxDensity
+
         vx1 = np.transpose(vx1)
         vx2 = np.transpose(vx2)
 
         data = dict()
-        data["velocity_x"] = vx1[..., None]
-        data["velocity_y"] = vx2[..., None]
-        data["absolute_velocity"] = vx[..., None]
+        data[field + "_x"] = vx1[..., None]
+        data[field + "_y"] = vx2[..., None]
+        data["absolute_" + field] = vx[..., None]
         bbox = np.array([[np.min(x), np.max(x)],
                          [np.min(y), np.max(y)],
                          [0.0, 1.0]])
-        ds = yt.load_uniform_grid(data, data["velocity_x"].shape, bbox=bbox, nprocs=4, length_unit=(1.0,"AU"))
-        s = yt.SlicePlot(ds, 'z', 'absolute_velocity', origin='left-window')
-        s.set_buff_size((2000, 2000))
+        ds = yt.load_uniform_grid(data, data[field + "_x"].shape, bbox=bbox, nprocs=4, length_unit=(1.0,"AU"))
+        s = yt.SlicePlot(ds, 'z', "absolute_" + field, origin='left-window')
+        s.set_buff_size(buffSize)
         s.set_cmap('all', cm.inferno)
-        s.annotate_line_integral_convolution('velocity_x', 'velocity_y', lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
-        s.save(filename, mpl_kwargs={'dpi': 250})
-
-    def plotMagneticFieldLIC(self, variable=None, cmap=cm.inferno, filename="test", cmaplabel=""):
-        self.interpolate = True
-        # if variable is not None:
-        #     self.plotVariable(variable, cmap=cmap)
-        # else:
-        #     self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
-
-        t = Transform(self.data)
-        vx1, vx2 = t.transformMagneticFieldToCylindrical()
-        x, y, vx1 = Interpolate.interpolateToUniformGrid(self.data, vx1, self.xrange, self.yrange)
-        x, y, vx2 = Interpolate.interpolateToUniformGrid(self.data, vx2, self.xrange, self.yrange)
-        vx = np.transpose(np.sqrt(vx1**2 + vx2**2)) * self.data.unitMagneticFluxDensity
-        vx1 = np.transpose(vx1)
-        vx2 = np.transpose(vx2)
-
-        data = dict()
-        data["magnetic_field_x"] = vx1[..., None]
-        data["magnetic_field_y"] = vx2[..., None]
-        data["magnetic_field_strength"] = vx[..., None]
-        bbox = np.array([[np.min(x), np.max(x)],
-                         [np.min(y), np.max(y)],
-                         [0.0, 1.0]])
-        ds = yt.load_uniform_grid(data, data["magnetic_field_x"].shape, bbox=bbox, nprocs=4, length_unit=(1.0,"AU"))
-        s = yt.SlicePlot(ds, 'z', 'magnetic_field_strength', origin='left-window')
-        s.set_buff_size((2000, 2000))
-        s.set_cmap('all', cm.inferno)
-        s.annotate_line_integral_convolution('magnetic_field_x', 'magnetic_field_y', lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
-        s.save(filename, mpl_kwargs={'dpi': 250})
-
+        s.annotate_line_integral_convolution(field + "_x", field + "_y", lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
+        s.save(filename, mpl_kwargs={'dpi': dpi})
 
     def plotMagneticFieldLines(self, density=3, variable=None, cmap=cm.inferno):
         self.interpolate = True
