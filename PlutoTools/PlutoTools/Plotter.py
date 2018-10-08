@@ -194,10 +194,10 @@ class Plotter:
                          [0.0, 1.0]])
         ds = yt.load_uniform_grid(data, data["magnetic_field_x"].shape, bbox=bbox, nprocs=4, length_unit=(1.0,"AU"))
         s = yt.SlicePlot(ds, 'z', 'magnetic_field_strength', origin='left-window')
-        s.set_buff_size((2000, 2000))
+        # s.set_buff_size((2000, 2000))
         s.set_cmap('all', cm.inferno)
         s.annotate_line_integral_convolution('magnetic_field_x', 'magnetic_field_y', lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
-        s.save(filename, mpl_kwargs={'dpi': 250})
+        s.save(filename, mpl_kwargs={'dpi': 150})
 
 
 
