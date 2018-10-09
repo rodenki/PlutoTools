@@ -78,17 +78,21 @@ class Plotter:
         plt.cla()
         plt.close()
 
-    def plotVariable(self, variable, cmap=cm.inferno):
+    def plotVariable(self, variable, cmap=cm.inferno, log=True,
+                     x_coords=[], y_coords=[]):
         #self.data.x2 = self.data.x2[:450]
         t = Transform(self.data)
         x, y = t.polarCoordsToCartesian()
+        if len(x_coords) > 0 or len(y_coords) > 0:
+            x = x_coords
+            y = y_coords
         fig = plt.figure(figsize=self.figsize)
         cb = None
 
         if self.interpolate:
             x, y, variable = Interpolate.interpolateToUniformGrid(self.data, variable, self.xrange, self.yrange)
 
-        if self.log == True:
+        if log == True:
             if len(self.vlimits) > 0:
                 plt.pcolormesh(x, y, variable, norm=LogNorm(vmin=self.vlimits[0], vmax=self.vlimits[1]), cmap=cmap)
             else:
