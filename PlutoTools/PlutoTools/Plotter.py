@@ -31,6 +31,7 @@ class Plotter:
         self.orbitalDistance = 1.0
         self.linewidth = 1.0
         self.title = ""
+        self.fontsize = 20
 
     def setXrange(self, start, stop, n):
         self.xrange = [start, stop, n]
@@ -54,6 +55,7 @@ class Plotter:
         self.vlimits = limits
 
     def setFontSize(self, size):
+        self.fontsize = int(size)
         rcParams.update({'font.size': size})
 
     def setTitle(self, title):
@@ -80,7 +82,7 @@ class Plotter:
 
     def plotVariable(self, variable, cmap=cm.inferno, log=True,
                      x_coords=[], y_coords=[]):
-        #self.data.x2 = self.data.x2[:450]
+
         t = Transform(self.data)
         x, y = t.polarCoordsToCartesian()
         if len(x_coords) > 0 or len(y_coords) > 0:
@@ -155,7 +157,8 @@ class Plotter:
         return image
 
     def plotLIC(self, variable=None, cmap=cm.inferno, filename="test", dpi=250,
-                buffSize=(2000, 2000), field="velocity"):
+                buffSize=(2000, 2000), field="velocity", lim=(0.46,0.54),
+                alpha=0.3):
         self.interpolate = True
 
         t = Transform(self.data)
@@ -185,19 +188,21 @@ class Plotter:
                          [np.min(y), np.max(y)],
                          [0.0, 1.0]])
         ds = yt.load_uniform_grid(data, data[field + "_x"].shape, bbox=bbox, nprocs=4, length_unit=(1.0,"AU"))
-        s = yt.SlicePlot(ds, 'z', "absolute_" + field, origin='left-window')
+        s = yt.SlicePlot(ds, 'z', "absolute_" + field, origin='left-window', fontsize=self.fontsize)
         s.set_buff_size(buffSize)
         s.set_cmap('all', cm.inferno)
-        s.annotate_line_integral_convolution(field + "_x", field + "_y", lim=(0.46,0.54), cmap=cm.Greys, alpha=0.3, const_alpha=True)
+        s.annotate_line_integral_convolution(field + "_x", field + "_y", lim=lim, cmap=cm.Greys, alpha=alpha, const_alpha=True)
         s.save(filename, mpl_kwargs={'dpi': dpi})
 
-    def plotMagneticFieldLines(self, density=3, variable=None, cmap=cm.inferno):
+    def plotMagneticFieldLines(self, density=3, variable=None, cmap=cm.inferno,
+                               log=True):
         self.interpolate = True
         cb = None
         if variable is not None:
-            plt, cb, ax = self.plotVariable(variable, cmap=cmap)
+            plt, cb, ax = self.plotVariable(variable, cmap=cmap, log=log)
         else:
-            plt, cb, ax = self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity, cmap=cmap)
+            plt, cb, ax = self.plotVariable(self.data.variables["rho"] * self.data.unitNumberDensity,
+                                            cmap=cmap, log=log)
 
         t = Transform(self.data)
         bx1, bx2 = t.transformMagneticFieldToCylindrical()
