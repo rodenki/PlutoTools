@@ -709,6 +709,7 @@ class Compute:
             if file.endswith(".h5"):
                 frameIndex = int(file.split('.')[1])
                 if frameIndex in frameRange:
+                    print(file)
                     data = Data(os.path.join(path, file))
                     loss = self.computeMassLoss(data)
                     times.append(float(data.time) * data.unitTimeYears)
