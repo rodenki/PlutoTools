@@ -6,7 +6,7 @@ from matplotlib import rc, rcParams, warnings
 from matplotlib import ticker, cm
 from matplotlib.colors import LogNorm
 #rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-rc('text', usetex=True)
+#rc('text', usetex=True)
 np.set_printoptions(threshold=500)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
