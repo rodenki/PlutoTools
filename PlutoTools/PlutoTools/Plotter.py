@@ -127,7 +127,7 @@ class Plotter:
         return plt
 
 
-    def plotVelocityFieldLines(self, density=3, variable=None, cmap=cm.inferno):
+    def plotVelocityFieldLines(self, density=3, variable=None, cmap=cm.inferno, **mpl_kwargs):
         self.interpolate = True
         cb = None
         if variable is not None:
@@ -145,7 +145,7 @@ class Plotter:
         vx2 /= n
 
         plt.streamplot(x, y, vx1, vx2, density=density, arrowstyle='->', linewidth=1,
-                       arrowsize=1.5)
+                       arrowsize=1.5, mpl_kwargs)
         return plt, cb, ax
 
     def computeLIC(self, vecField, kernellen=31):
