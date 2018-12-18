@@ -636,6 +636,40 @@ class Compute:
         totalMassLoss = np.sum(massLoss)
         return totalMassLoss
 
+    def computeMassLosses(self, path, frameRange, zlim=30):
+        losses = []
+        times = []
+        for file in os.listdir(path):
+            if file.endswith(".h5"):
+                frameIndex = int(file.split('.')[1])
+                if frameIndex in frameRange:
+                    print(file)
+                    data = Data(os.path.join(path, file))
+                    loss = self.computeMassLoss(data, zlim=zlim)
+                    times.append(float(data.time) * data.unitTimeYears)
+                    losses.append(loss)
+                    if self.verbosity > 0:
+                        print("Massflux for " + file + ": " + str(loss))
+        return np.array(losses), np.array(times)
+
+    def plotMassLosses(self, path, filename="losses.eps"):
+        losses, times = self.computeMassLosses(path)
+        losses = np.array(losses, dtype=np.double)
+        times = np.array(times, dtype=np.double)
+
+        key = times.argsort()
+        times = times[key]
+        losses = losses[key]
+        np.savetxt("losses.dat", (times, losses))
+
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
+        plt.semilogy(times, losses)
+        plt.xlabel(r't [yr]')
+        plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
+        plt.ylim(5e-9, 2e-8)
+        plt.savefig(filename)
+
     def computeSpaceTimeDataStress(self, path, frameRange):
         plotData = []
         times = []
@@ -701,40 +735,6 @@ class Compute:
         times = times[mask]
         plotData = plotData[mask]
         return plotData, times
-
-    def computeMassLosses(self, path, frameRange):
-        losses = []
-        times = []
-        for file in os.listdir(path):
-            if file.endswith(".h5"):
-                frameIndex = int(file.split('.')[1])
-                if frameIndex in frameRange:
-                    print(file)
-                    data = Data(os.path.join(path, file))
-                    loss = self.computeMassLoss(data)
-                    times.append(float(data.time) * data.unitTimeYears)
-                    losses.append(loss)
-                    if self.verbosity > 0:
-                        print("Massflux for " + file + ": " + str(loss))
-        return np.array(losses), np.array(times)
-
-    def plotMassLosses(self, path, filename="losses.eps"):
-        losses, times = self.computeMassLosses(path)
-        losses = np.array(losses, dtype=np.double)
-        times = np.array(times, dtype=np.double)
-
-        key = times.argsort()
-        times = times[key]
-        losses = losses[key]
-        np.savetxt("losses.dat", (times, losses))
-
-        plt.rc('text', usetex=True)
-        plt.rc('font', family='serif')
-        plt.semilogy(times, losses)
-        plt.xlabel(r't [yr]')
-        plt.ylabel(r'$\dot{M}_w $ [$\frac{M_{\odot}}{\mathrm{yr}}$]')
-        plt.ylim(5e-9, 2e-8)
-        plt.savefig(filename)
 
     def averageFramesComplete(self, path, frameRange):
         frames_rho = []
