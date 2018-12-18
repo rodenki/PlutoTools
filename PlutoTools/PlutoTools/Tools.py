@@ -623,12 +623,12 @@ class Compute:
 
         return radii, losses, potentials
 
-    def computeMassLoss(self, data):
+    def computeMassLoss(self, data, zlim=30):
         computeLimit = int(len(data.dx1) * 0.99)
         rho = data.variables["rho"][:,computeLimit]# * data.unitDensity
         vx1 = data.variables["vx1"][:,computeLimit] * data.unitVelocity
         #tempRange = [i for i,v in enumerate(temp) if v > 500 and vx1[i] > 0]
-        tempRange = [i for i,v in enumerate(rho) if np.abs(data.x1[computeLimit] * np.cos(data.x2[i])) > 30 and vx1[i] > 0]
+        tempRange = [i for i,v in enumerate(rho) if np.abs(data.x1[computeLimit] * np.cos(data.x2[i])) > zlim and vx1[i] > 0]
         rho *= data.unitDensity
         #tempRange = range(min(tempRange), max(tempRange))
         surface = data.dx2 * data.x1[computeLimit]**2 * np.abs(np.sin(data.x2)) * 2.0 * np.pi * data.unitLength**2
