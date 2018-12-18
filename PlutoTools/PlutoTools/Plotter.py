@@ -145,7 +145,7 @@ class Plotter:
         vx2 /= n
 
         plt.streamplot(x, y, vx1, vx2, density=density, arrowstyle='->', linewidth=1,
-                       arrowsize=1.5, mpl_kwargs)
+                       arrowsize=1.5, **mpl_kwargs)
         return plt, cb, ax
 
     def computeLIC(self, vecField, kernellen=31):
