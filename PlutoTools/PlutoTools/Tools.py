@@ -918,7 +918,7 @@ class Interpolate:
         grid_x, grid_y = np.meshgrid(np.linspace(*x_range), np.linspace(*y_range))
         newVariable = scipy.interpolate.griddata(points, variable, (grid_x, grid_y))
         grid_r = np.sqrt(grid_x**2 + grid_y**2)
-        newVariable[grid_r < 1.0] = np.nan
+        newVariable[grid_r < np.min(x_range)] = np.nan
         return grid_x, grid_y, newVariable
 
 
