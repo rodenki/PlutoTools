@@ -278,7 +278,7 @@ class Compute:
         # FUV ionisation
         if fuv:
             rho_column *= self.data.unitDensity / self.data.unitNumberDensity
-            xe_fuv = 2e-5 * np.exp(-rho_column / fuv_column)
+            xe_fuv = 2e-5 * np.exp(-(rho_column / fuv_column)**4)
             xe = np.maximum(xe, xe_fuv)
         return xe
 
