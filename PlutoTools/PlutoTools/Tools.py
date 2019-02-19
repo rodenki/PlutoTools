@@ -246,7 +246,7 @@ class Compute:
             betas.append(beta[0])
         return yy/H, np.array(betas)
 
-    def computeIonizationStructure(self):
+    def computeIonizationStructure(self, fuv=False, fuv_column=0.03):
         collection = IonFractionCollection()
         collection.loadIonData()
 
@@ -274,6 +274,12 @@ class Compute:
         xe = np.copy(rho)
         for (i, j), rho_i in np.ndenumerate(rho):
             xe[i][j] = collection.interpolateIonFraction(temp[i][j], zeta[i][j], rho_i)
+
+        # FUV ionisation
+        if fuv:
+            rho_column *= self.data.unitDensity / self.data.unitNumberDensity
+            xe_fuv = 2e-5 * np.exp(-rho_column / fuv_column)
+            xe = np.maximum(xe, xe_fuv)
         return xe
 
 
