@@ -284,7 +284,7 @@ class Compute:
 
 
 
-    def computeElsasserNumbers(self, radius, H, x_range, y_range):
+    def computeElsasserNumbers(self, radius, H, x_range, y_range, fuv=False, fuv_column=0.03):
 
         collection = IonFractionCollection()
         collection.loadIonData()
@@ -317,6 +317,7 @@ class Compute:
 
         x, y, temp = Interpolate.interpolateToUniformGrid(self.data, temp, x_range, y_range)
         x, y, rho = Interpolate.interpolateToUniformGrid(self.data, rho, x_range, y_range)
+        x, y, rho_column = Interpolate.interpolateToUniformGrid(self.data, rho_column, x_range, y_range)
         x, y, bx1 = Interpolate.interpolateToUniformGrid(self.data, bx1, x_range, y_range)
         x, y, bx2 = Interpolate.interpolateToUniformGrid(self.data, bx2, x_range, y_range)
          #x, y, bx3 = Interpolate.interpolateToUniformGrid(self.data, bx3, x_range, y_range)
@@ -328,15 +329,21 @@ class Compute:
         e_numbers = []
         for i in yy:
             rho_i = Interpolate.interpolatePoint2D(x_range, y_range, rho, (radius, i))
+            rhoc_i = Interpolate.interpolatePoint2D(x_range, y_range, rho_column, (radius, i))
             temp_i = Interpolate.interpolatePoint2D(x_range, y_range, temp, (radius, i))
             bz_i = np.absolute(Interpolate.interpolatePoint2D(x_range, y_range, bx2, (radius, i)))
             zeta_i = Interpolate.interpolatePoint2D(x_range, y_range, zeta, (radius, i))
 
-            #print(i, rho_i, temp_i, bz_i, zeta_i)
 
             xe = collection.interpolateIonFraction(temp_i, zeta_i, rho_i)
-            eta_ohm = 230.0 / xe * np.sqrt(temp_i);
-            # eta_ohm = 1.268206e+17
+
+            # FUV ionisation
+            if fuv:
+                rhoc_i *= self.data.unitDensity / self.data.unitNumberDensity
+                xe_fuv = 2e-5 * np.exp(-(rhoc_i / fuv_column)**4)
+                xe = np.maximum(xe, xe_fuv)
+            
+            eta_ohm = 234.0 / xe * np.sqrt(temp_i);
             v_a = bz_i / np.sqrt(rho_i / self.data.unitNumberDensity * self.data.unitDensity)
             omega = np.sqrt(self.data.G * self.data.solarMass / (radius * self.data.unitLength)**3)
             elsasser_ohm = v_a**2 / (omega * eta_ohm)
