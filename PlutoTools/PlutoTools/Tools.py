@@ -282,6 +282,30 @@ class Compute:
             xe = np.maximum(xe, xe_fuv)
         return xe
 
+    def computeIonizationRates(self):
+        collection = IonFractionCollection()
+        collection.loadIonData()
+
+        rho = self.data.variables["rho"] * self.data.unitNumberDensity
+        r, th = np.meshgrid(self.data.x1, self.data.x2)
+        dr, dth = np.meshgrid(self.data.dx1, self.data.dx2)
+        rho_w = rho * dr * self.data.unitLength
+        rho_column = np.copy(rho_w)
+        for i in range(rho_w.shape[0]):
+            for j in range(len(rho_w[i])):
+                subc = np.sum(rho_w[i][:j])
+                rho_column[i, j] = subc
+
+        tau = np.exp(-rho_column * 2e-22)
+        crossSection = 8.5e-23 * np.power(2.0, -2.81);
+        absCoefficient = 0.686 * np.power(tau, -0.606) * np.exp(-1.778 * np.power(tau, -0.262));
+        de = 37;
+        xlum = 2.0e30 * 6.242e11
+        xrayEnergy = 2e3
+        zeta = 0.5 * xlum / (4.0 * np.pi * (r*self.data.unitLength)**2 * xrayEnergy) * crossSection * xrayEnergy / de * absCoefficient
+        mask = np.isnan(zeta)
+        zeta[mask] = 1e-18
+        return zeta
 
 
     def computeElsasserNumbers(self, radius, H, x_range, y_range, fuv=False, fuv_column=0.03):
